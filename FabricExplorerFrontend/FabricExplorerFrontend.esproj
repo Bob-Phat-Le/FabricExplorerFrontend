@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.VisualStudio.JavaScript.Sdk/1.0.6165494">
+  <ItemGroup>
+    <Folder Include="js\components\" />
+    <Folder Include="js\features\" />
+    <Folder Include="js\pages\" />
+  </ItemGroup>
+</Project>

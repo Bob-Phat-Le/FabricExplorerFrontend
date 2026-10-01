@@ -1,0 +1,541 @@
+<section id="view-replication" class="hidden space-y-6 max-w-5xl mx-auto">
+    <!-- Page Header Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+        <div>
+            <div class="flex items-center space-x-2.5">
+                <h1 class="text-xl font-bold text-slate-900 tracking-tight">Replication Wizard</h1>
+                <span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
+                    <i class="fa-solid fa-arrows-split-up-and-left rotate-90 mr-1 text-[9px]"></i>
+                    Open Mirroring
+                </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-1">Configure Open Mirroring for tables in Microsoft Fabric using a guided wizard.</p>
+        </div>
+        <div class="flex items-center space-x-2 flex-wrap gap-2">
+            <button onclick="resetReplForm()" class="px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm flex items-center space-x-1.5">
+                <i class="fa-solid fa-rotate-left text-slate-400"></i>
+                <span>Reset Wizard</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- 6-STEP WORKFLOW STEPPER HEADER -->
+    <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-sm overflow-x-auto">
+        <div class="flex items-center justify-between min-w-[780px] text-xs font-medium">
+            <!-- Step 1 -->
+            <div id="repl-step-indicator-1" onclick="goToReplStep(1)" class="flex items-center space-x-2 cursor-pointer group">
+                <div id="repl-step-badge-1" class="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs shadow-sm transition-all">1</div>
+                <div class="flex flex-col">
+                    <span id="repl-step-title-1" class="font-bold text-indigo-600">Target DB</span>
+                    <span class="text-[10px] text-slate-400">Destination</span>
+                </div>
+            </div>
+            <div class="h-0.5 w-8 bg-slate-200" id="repl-step-line-1"></div>
+
+            <!-- Step 2 -->
+            <div id="repl-step-indicator-2" onclick="goToReplStep(2)" class="flex items-center space-x-2 cursor-pointer group">
+                <div id="repl-step-badge-2" class="w-7 h-7 rounded-full bg-slate-100 border border-slate-300 text-slate-500 font-bold flex items-center justify-center text-xs transition-all">2</div>
+                <div class="flex flex-col">
+                    <span id="repl-step-title-2" class="font-semibold text-slate-400">Source Table</span>
+                    <span class="text-[10px] text-slate-400">Schema & Entity</span>
+                </div>
+            </div>
+            <div class="h-0.5 w-8 bg-slate-200" id="repl-step-line-2"></div>
+
+            <!-- Step 3 -->
+            <div id="repl-step-indicator-3" onclick="goToReplStep(3)" class="flex items-center space-x-2 cursor-pointer group">
+                <div id="repl-step-badge-3" class="w-7 h-7 rounded-full bg-slate-100 border border-slate-300 text-slate-500 font-bold flex items-center justify-center text-xs transition-all">3</div>
+                <div class="flex flex-col">
+                    <span id="repl-step-title-3" class="font-semibold text-slate-400">Metadata</span>
+                    <span class="text-[10px] text-slate-400">Primary Keys</span>
+                </div>
+            </div>
+            <div class="h-0.5 w-8 bg-slate-200" id="repl-step-line-3"></div>
+
+            <!-- Step 4 -->
+            <div id="repl-step-indicator-4" onclick="goToReplStep(4)" class="flex items-center space-x-2 cursor-pointer group">
+                <div id="repl-step-badge-4" class="w-7 h-7 rounded-full bg-slate-100 border border-slate-300 text-slate-500 font-bold flex items-center justify-center text-xs transition-all">4</div>
+                <div class="flex flex-col">
+                    <span id="repl-step-title-4" class="font-semibold text-slate-400">Payload</span>
+                    <span class="text-[10px] text-slate-400">Format</span>
+                </div>
+            </div>
+            <div class="h-0.5 w-8 bg-slate-200" id="repl-step-line-4"></div>
+
+            <!-- Step 5 -->
+            <div id="repl-step-indicator-5" onclick="goToReplStep(5)" class="flex items-center space-x-2 cursor-pointer group">
+                <div id="repl-step-badge-5" class="w-7 h-7 rounded-full bg-slate-100 border border-slate-300 text-slate-500 font-bold flex items-center justify-center text-xs transition-all">5</div>
+                <div class="flex flex-col">
+                    <span id="repl-step-title-5" class="font-semibold text-slate-400">Row Marker</span>
+                    <span class="text-[10px] text-slate-400">CDC Tracking</span>
+                </div>
+            </div>
+            <div class="h-0.5 w-8 bg-slate-200" id="repl-step-line-5"></div>
+
+            <!-- Step 6 -->
+            <div id="repl-step-indicator-6" onclick="goToReplStep(6)" class="flex items-center space-x-2 cursor-pointer group">
+                <div id="repl-step-badge-6" class="w-7 h-7 rounded-full bg-slate-100 border border-slate-300 text-slate-500 font-bold flex items-center justify-center text-xs transition-all">6</div>
+                <div class="flex flex-col">
+                    <span id="repl-step-title-6" class="font-semibold text-slate-400">Review & Start</span>
+                    <span class="text-[10px] text-slate-400">Summary</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REPLICATION WIZARD STEP CARDS CONTAINER -->
+    <div class="space-y-6">
+        
+        <!-- STEP 1: TARGET DATABASE -->
+        <div id="repl-wizard-step-1" class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs flex items-center justify-center font-bold">1</span>
+                        <span>Step 1: Target Mirrored Database</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Select the Fabric Mirrored Database that will receive the replicated data.</p>
+                </div>
+                <span class="text-[11px] text-indigo-600 font-medium bg-indigo-50 px-2.5 py-1 rounded-full">Step 1 of 6</span>
+            </div>
+
+            <div class="space-y-3">
+                <label class="block text-xs font-semibold text-slate-700">Mirrored Database ID <span class="text-rose-500">*</span></label>
+                <select id="replDbSelect" onchange="setReplDb(this.value)" class="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="CustomerMirror">CustomerMirror (Data Platform Workspace)</option>
+                    <option value="SalesMirror">SalesMirror (Analytics Workspace)</option>
+                    <option value="EnterpriseDataMirror">EnterpriseDataMirror (Enterprise Workspace)</option>
+                </select>
+            </div>
+
+            <!-- Selected DB Info Badge -->
+            <div id="replDbInfoPanel" class="p-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between text-xs">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm shrink-0 font-bold">
+                        <i class="fa-solid fa-arrows-split-up-and-left rotate-90"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-slate-900 text-sm" id="replDbInfoName">CustomerMirror</span>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Workspace: <span id="replDbInfoWs" class="font-medium text-slate-700">Data Platform</span></p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                    Active Target
+                </span>
+            </div>
+
+            <!-- Step 1 Navigation Buttons -->
+            <div class="flex justify-end pt-4 border-t border-slate-100">
+                <button type="button" onclick="nextReplStep()" class="px-5 py-2 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-all flex items-center space-x-2">
+                    <span>Next: Source Table</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 2: SOURCE TABLE -->
+        <div id="repl-wizard-step-2" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs flex items-center justify-center font-bold">2</span>
+                        <span>Step 2: Source Table</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Specify the schema and table entity that will be replicated.</p>
+                </div>
+                <span class="text-[11px] text-indigo-600 font-medium bg-indigo-50 px-2.5 py-1 rounded-full">Step 2 of 6</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-semibold text-slate-700">Schema Name <span class="text-rose-500">*</span></label>
+                    <select id="replSchemaSelect" onchange="setReplSchema(this.value)" class="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="dbo">dbo</option>
+                        <option value="sales">sales</option>
+                        <option value="analytics">analytics</option>
+                    </select>
+                </div>
+
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-semibold text-slate-700">Table Name <span class="text-rose-500">*</span></label>
+                    <select id="replTableSelect" onchange="setReplTable(this.value)" class="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <option value="Customers">Customers</option>
+                        <option value="Orders">Orders</option>
+                        <option value="Products">Products</option>
+                        <option value="Inventory">Inventory</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SAFETY WARNING: EXISTING REPLICATION DETECTED -->
+            <div id="replExistingWarning" class="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs flex items-start space-x-3">
+                <i class="fa-solid fa-triangle-exclamation text-amber-600 text-base mt-0.5"></i>
+                <div class="flex-1">
+                    <span class="font-bold">Existing Replication Stream Detected:</span>
+                    <span class="text-amber-800"> Table <code id="replExistingTableName" class="font-mono bg-amber-100 px-1 py-0.5 rounded">dbo.Customers</code> already has an active replication stream running.</span>
+                </div>
+            </div>
+
+            <!-- Step 2 Navigation Buttons -->
+            <div class="flex justify-between pt-4 border-t border-slate-100">
+                <button type="button" onclick="prevReplStep()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                    <span>Previous</span>
+                </button>
+                <button type="button" onclick="nextReplStep()" class="px-5 py-2 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center space-x-2">
+                    <span>Next: Metadata</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 3: AUTO-CREATE METADATA -->
+        <div id="repl-wizard-step-3" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs flex items-center justify-center font-bold">3</span>
+                        <span>Step 3: Auto-Create _metadata.json</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Automatically generate schema manifest metadata required for Open Mirroring.</p>
+                </div>
+                <span class="text-[11px] text-indigo-600 font-medium bg-indigo-50 px-2.5 py-1 rounded-full">Step 3 of 6</span>
+            </div>
+
+            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <div>
+                    <p class="text-xs font-bold text-slate-900">Auto-Create _metadata.json</p>
+                    <p class="text-[11px] text-slate-500">Generates JSON metadata containing column definitions and primary key indexes.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="replMetadataToggle" checked onchange="toggleReplMetadata()" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+            </div>
+
+            <div id="replMetadataOffNotice" class="hidden text-xs text-slate-500 italic bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <i class="fa-solid fa-circle-info mr-1 text-indigo-500"></i> Metadata will not be automatically generated. You must supply a custom schema metadata manifest manually.
+            </div>
+
+            <!-- Primary Key Selection Section -->
+            <div id="replPkSection" class="space-y-3">
+                <div class="flex items-center justify-between">
+                    <label class="block text-xs font-semibold text-slate-700">Primary Key Columns <span class="text-rose-500">*</span></label>
+                    <span class="text-[11px] text-slate-400">Specify columns used to identify unique records</span>
+                </div>
+
+                <!-- Selected PK Chips Display -->
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 min-h-[46px] flex flex-wrap items-center gap-2" id="replPkChipsContainer">
+                    <!-- Dynamic PK Chips inserted here -->
+                </div>
+
+                <!-- Column Selector Multi-Select Dropdown -->
+                <div class="relative">
+                    <button type="button" onclick="togglePkDropdown()" class="w-full text-xs px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-slate-700 hover:bg-slate-50 flex items-center justify-between font-semibold">
+                        <span><i class="fa-solid fa-key text-indigo-500 mr-2"></i>Select Primary Key Columns...</span>
+                        <i class="fa-solid fa-chevron-down text-slate-400 text-[10px]"></i>
+                    </button>
+                    <div id="pkDropdownMenu" class="hidden absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-20 p-2 space-y-1">
+                        <div onclick="toggleReplPk('CustomerId')" class="px-3 py-1.5 hover:bg-slate-50 rounded text-xs flex items-center justify-between cursor-pointer">
+                            <span>CustomerId</span>
+                            <i class="fa-solid fa-check text-indigo-600 text-xs" id="pkCheck-CustomerId"></i>
+                        </div>
+                        <div onclick="toggleReplPk('RegionId')" class="px-3 py-1.5 hover:bg-slate-50 rounded text-xs flex items-center justify-between cursor-pointer">
+                            <span>RegionId</span>
+                            <i class="fa-solid fa-check text-indigo-600 text-xs hidden" id="pkCheck-RegionId"></i>
+                        </div>
+                        <div onclick="toggleReplPk('CustomerName')" class="px-3 py-1.5 hover:bg-slate-50 rounded text-xs flex items-center justify-between cursor-pointer">
+                            <span>CustomerName</span>
+                            <i class="fa-solid fa-check text-indigo-600 text-xs hidden" id="pkCheck-CustomerName"></i>
+                        </div>
+                        <div onclick="toggleReplPk('Email')" class="px-3 py-1.5 hover:bg-slate-50 rounded text-xs flex items-center justify-between cursor-pointer">
+                            <span>Email</span>
+                            <i class="fa-solid fa-check text-indigo-600 text-xs hidden" id="pkCheck-Email"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3 Navigation Buttons -->
+            <div class="flex justify-between pt-4 border-t border-slate-100">
+                <button type="button" onclick="prevReplStep()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                    <span>Previous</span>
+                </button>
+                <button type="button" onclick="nextReplStep()" class="px-5 py-2 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center space-x-2">
+                    <span>Next: Payload Format</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 4: PAYLOAD FORMAT -->
+        <div id="repl-wizard-step-4" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs flex items-center justify-center font-bold">4</span>
+                        <span>Step 4: Payload Format</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Choose the serialization format used for replicated payload data.</p>
+                </div>
+                <span class="text-[11px] text-indigo-600 font-medium bg-indigo-50 px-2.5 py-1 rounded-full">Step 4 of 6</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
+                <button type="button" onclick="setReplPayload('Parquet')" id="btnReplFmtParquet" class="p-4 rounded-xl border-2 border-indigo-600 bg-indigo-50/50 text-indigo-700 font-bold text-xs flex flex-col items-center justify-center space-y-2 transition-all">
+                    <i class="fa-solid fa-box text-2xl"></i>
+                    <span class="text-sm">Parquet</span>
+                </button>
+                <button type="button" onclick="setReplPayload('CSV')" id="btnReplFmtCSV" class="p-4 rounded-xl border border-slate-200 bg-white text-slate-700 font-bold text-xs flex flex-col items-center justify-center space-y-2 hover:border-indigo-300 transition-all">
+                    <i class="fa-solid fa-file-csv text-2xl"></i>
+                    <span class="text-sm">CSV</span>
+                </button>
+            </div>
+
+            <p id="replPayloadDesc" class="text-[11px] text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-200 leading-relaxed">
+                Columnar format optimized for high-performance analytics and large-scale data processing in Microsoft Fabric.
+            </p>
+
+            <!-- Step 4 Navigation Buttons -->
+            <div class="flex justify-between pt-4 border-t border-slate-100">
+                <button type="button" onclick="prevReplStep()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                    <span>Previous</span>
+                </button>
+                <button type="button" onclick="nextReplStep()" class="px-5 py-2 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center space-x-2">
+                    <span>Next: Row Marker</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 5: ROW MARKER (CDC TRACKING) -->
+        <div id="repl-wizard-step-5" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs flex items-center justify-center font-bold">5</span>
+                        <span>Step 5: Row Marker (CDC Tracking)</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Include row-level change information in the replicated payload to track updates.</p>
+                </div>
+                <span class="text-[11px] text-indigo-600 font-medium bg-indigo-50 px-2.5 py-1 rounded-full">Step 5 of 6</span>
+            </div>
+
+            <div class="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
+                <div>
+                    <p class="text-xs font-bold text-slate-900">Enable Row Marker</p>
+                    <p class="text-[11px] text-slate-500">A row marker helps identify row modifications during replication synchronization.</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" id="replRowMarkerToggle" checked onchange="toggleReplRowMarker()" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                </label>
+            </div>
+
+            <div id="replRowMarkerOffNotice" class="hidden text-xs text-slate-500 italic bg-slate-50 p-3 rounded-lg border border-slate-200">
+                <i class="fa-solid fa-info-circle mr-1 text-indigo-500"></i> Row-level change tracking is disabled. Replicated files will contain state snapshots without change markers.
+            </div>
+
+            <!-- Row Marker Sub-options -->
+            <div id="replRowMarkerPanel" class="space-y-4">
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-semibold text-slate-700">Source Field <span class="text-rose-500">*</span></label>
+                    <div class="flex items-center space-x-3">
+                        <select id="replSourceFieldSelect" onchange="setReplSourceField(this.value)" class="flex-1 text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="UpdatedAt">UpdatedAt</option>
+                            <option value="ChangeTimestamp">ChangeTimestamp</option>
+                            <option value="ModifiedDate">ModifiedDate</option>
+                            <option value="LastModified">LastModified</option>
+                        </select>
+                        <div class="px-3 py-2 bg-slate-100 rounded-lg border border-slate-200 text-xs font-mono text-slate-600 shrink-0">
+                            Type: <strong class="text-indigo-600">DateTime</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-xs font-semibold text-slate-700">Change Types <span class="text-rose-500">*</span></label>
+                        <span class="text-[11px] text-slate-400">Select change types to mark during synchronization</span>
+                    </div>
+
+                    <div class="flex items-center space-x-2 flex-wrap gap-2">
+                        <button type="button" onclick="toggleReplChangeType('Insert')" id="chipCtInsert" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-indigo-600 bg-indigo-50 text-indigo-700 transition-all">
+                            Insert ✓
+                        </button>
+                        <button type="button" onclick="toggleReplChangeType('Update')" id="chipCtUpdate" class="px-3.5 py-2 rounded-xl text-xs font-bold border border-indigo-600 bg-indigo-50 text-indigo-700 transition-all">
+                            Update ✓
+                        </button>
+                        <button type="button" onclick="toggleReplChangeType('Delete')" id="chipCtDelete" class="px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 transition-all">
+                            Delete
+                        </button>
+                        <button type="button" onclick="toggleReplChangeType('None')" id="chipCtNone" class="px-3.5 py-2 rounded-xl text-xs font-medium border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 transition-all">
+                            None
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5 Navigation Buttons -->
+            <div class="flex justify-between pt-4 border-t border-slate-100">
+                <button type="button" onclick="prevReplStep()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                    <span>Previous</span>
+                </button>
+                <button type="button" onclick="nextReplStep()" class="px-5 py-2 rounded-lg text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center space-x-2">
+                    <span>Next: Review & Start</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- STEP 6: REVIEW & START REPLICATION -->
+        <div id="repl-wizard-step-6" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-5">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                        <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 text-xs flex items-center justify-center font-bold">6</span>
+                        <span>Step 6: Review Configuration & Trigger Replication</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Verify Open Mirroring parameters before initializing stream replication.</p>
+                </div>
+                <span id="replRevBadge" class="text-[11px] text-emerald-700 font-medium bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full">Ready to Replicate</span>
+            </div>
+
+            <!-- Breakdown Review Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-1.5">
+                        <span class="font-bold text-slate-800">1. Target Mirrored Database</span>
+                        <button type="button" onclick="goToReplStep(1)" class="text-indigo-600 hover:underline font-semibold text-[11px]">Edit</button>
+                    </div>
+                    <p class="text-slate-600"><span class="text-slate-400">Database ID:</span> <strong id="rrevDb" class="text-slate-900 font-mono">CustomerMirror</strong></p>
+                    <p class="text-slate-600"><span class="text-slate-400">Workspace:</span> <strong id="rrevWs" class="text-slate-900">Data Platform</strong></p>
+                </div>
+
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-1.5">
+                        <span class="font-bold text-slate-800">2. Source Entity</span>
+                        <button type="button" onclick="goToReplStep(2)" class="text-indigo-600 hover:underline font-semibold text-[11px]">Edit</button>
+                    </div>
+                    <p class="text-slate-600"><span class="text-slate-400">Schema / Table:</span> <strong id="rrevTable" class="text-slate-900 font-mono">dbo.Customers</strong></p>
+                </div>
+
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-1.5">
+                        <span class="font-bold text-slate-800">3. Metadata Manifest</span>
+                        <button type="button" onclick="goToReplStep(3)" class="text-indigo-600 hover:underline font-semibold text-[11px]">Edit</button>
+                    </div>
+                    <p class="text-slate-600"><span class="text-slate-400">Auto-Create:</span> <strong id="rrevMeta" class="text-slate-900">Enabled</strong></p>
+                    <p class="text-slate-600"><span class="text-slate-400">Primary Keys:</span> <strong id="rrevPk" class="text-slate-900 font-mono">CustomerId</strong></p>
+                </div>
+
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-1.5">
+                        <span class="font-bold text-slate-800">4. Payload Format</span>
+                        <button type="button" onclick="goToReplStep(4)" class="text-indigo-600 hover:underline font-semibold text-[11px]">Edit</button>
+                    </div>
+                    <p class="text-slate-600"><span class="text-slate-400">Serialization:</span> <strong id="rrevFormat" class="text-slate-900">Parquet</strong></p>
+                </div>
+
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2 md:col-span-2">
+                    <div class="flex justify-between items-center border-b border-slate-200 pb-1.5">
+                        <span class="font-bold text-slate-800">5. Row Marker (CDC)</span>
+                        <button type="button" onclick="goToReplStep(5)" class="text-indigo-600 hover:underline font-semibold text-[11px]">Edit</button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <p class="text-slate-600"><span class="text-slate-400">Row Marker Status:</span> <strong id="rrevRowMarker" class="text-slate-900">Enabled</strong></p>
+                        <p class="text-slate-600"><span class="text-slate-400">Source Field / Changes:</span> <strong id="rrevSourceField" class="text-slate-900 font-mono">UpdatedAt (Insert, Update)</strong></p>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Step 6 Navigation Buttons -->
+            <div class="flex justify-between pt-4 border-t border-slate-100">
+                <button type="button" onclick="prevReplStep()" class="px-4 py-2 rounded-lg text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                    <span>Previous</span>
+                </button>
+                <button id="btnStartRepl" type="button" onclick="openReplConfirmModal()" class="px-6 py-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-md flex items-center space-x-2">
+                    <i class="fa-solid fa-play"></i>
+                    <span>Start Replication</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RECENT REPLICATION HISTORY TABLE -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden mt-8">
+        <div class="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/50">
+            <div>
+                <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Recent Replication Streams</h3>
+                <p class="text-[11px] text-slate-400">Active and past Open Mirroring configurations</p>
+            </div>
+            <div class="flex items-center space-x-2">
+                <div class="flex items-center bg-white border border-slate-200 rounded-lg p-0.5 text-[11px]">
+                    <button onclick="filterReplHistory('All')" id="btnReplHistFilterAll" class="px-2.5 py-1 rounded font-semibold text-indigo-600 bg-indigo-50">All</button>
+                    <button onclick="filterReplHistory('Running')" id="btnReplHistFilterRunning" class="px-2.5 py-1 rounded text-slate-600 hover:bg-slate-50">Running</button>
+                    <button onclick="filterReplHistory('Completed')" id="btnReplHistFilterCompleted" class="px-2.5 py-1 rounded text-slate-600 hover:bg-slate-50">Completed</button>
+                </div>
+                <button onclick="showToast('Refreshed replication configurations', 'info')" class="p-1.5 border border-slate-200 bg-white rounded-lg text-slate-500 hover:bg-slate-50 text-xs">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                        <th class="p-3 pl-4">Database</th>
+                        <th class="p-3">Schema</th>
+                        <th class="p-3">Table</th>
+                        <th class="p-3">Format</th>
+                        <th class="p-3">Row Marker</th>
+                        <th class="p-3">Status</th>
+                        <th class="p-3">Last Activity</th>
+                        <th class="p-3 text-right pr-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-medium text-slate-700" id="replHistoryTableBody">
+                    <tr class="hover:bg-slate-50 repl-hist-row" data-status="Running">
+                        <td class="p-3 pl-4 font-bold text-slate-900 font-mono">CustomerMirror</td>
+                        <td class="p-3 font-mono">dbo</td>
+                        <td class="p-3 font-bold text-slate-900 font-mono">Customers</td>
+                        <td class="p-3">Parquet</td>
+                        <td class="p-3 text-emerald-600 font-bold">Enabled</td>
+                        <td class="p-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">● Running</span></td>
+                        <td class="p-3 text-slate-500">Just now</td>
+                        <td class="p-3 text-right pr-4"><button onclick="showToast('Replication metrics details', 'info')" class="text-indigo-600 font-semibold">View</button></td>
+                    </tr>
+                    <tr class="hover:bg-slate-50 repl-hist-row" data-status="Running">
+                        <td class="p-3 pl-4 font-bold text-slate-900 font-mono">SalesMirror</td>
+                        <td class="p-3 font-mono">dbo</td>
+                        <td class="p-3 font-bold text-slate-900 font-mono">Orders</td>
+                        <td class="p-3">CSV</td>
+                        <td class="p-3 text-slate-400">Disabled</td>
+                        <td class="p-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">● Running</span></td>
+                        <td class="p-3 text-slate-500">2 min ago</td>
+                        <td class="p-3 text-right pr-4"><button onclick="showToast('Replication metrics details', 'info')" class="text-indigo-600 font-semibold">View</button></td>
+                    </tr>
+                    <tr class="hover:bg-slate-50 repl-hist-row" data-status="Completed">
+                        <td class="p-3 pl-4 font-bold text-slate-900 font-mono">CustomerMirror</td>
+                        <td class="p-3 font-mono">dbo</td>
+                        <td class="p-3 font-bold text-slate-900 font-mono">Products</td>
+                        <td class="p-3">Parquet</td>
+                        <td class="p-3 text-emerald-600 font-bold">Enabled</td>
+                        <td class="p-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-indigo-50 text-indigo-700 border border-indigo-200">✓ Completed</span></td>
+                        <td class="p-3 text-slate-500">10 min ago</td>
+                        <td class="p-3 text-right pr-4"><button onclick="showToast('Replication metrics details', 'info')" class="text-indigo-600 font-semibold">View</button></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fabric Explorer — Enterprise Data Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/tailwind.config.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+</head>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-700">
+
+    <div class="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        <!-- TOP HEADER BAR -->
+        <header class="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-20 shadow-sm shrink-0">
+            <!-- Left: Brand Logo & Title -->
+            <div class="flex items-center space-x-3">
+                <button id="sidebarToggle" onclick="toggleSidebarCollapse()" class="text-slate-500 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors md:hidden">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+                <div class="flex items-center space-x-2.5 cursor-pointer" onclick="switchTab('connection')">
+                    <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-600 via-blue-500 to-teal-400 flex items-center justify-center text-white shadow-sm">
+                        <i class="fa-solid fa-cubes text-base"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="font-bold text-slate-900 tracking-tight text-base leading-none">Fabric Explorer</span>
+                        <span class="text-[10px] text-slate-400 font-medium tracking-wide uppercase mt-0.5">Enterprise Data Management</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Action Icons & Account Menu -->
+            <div class="flex items-center space-x-3">
+                <button onclick="showToast('No new alert notifications', 'info')" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-colors relative" title="Notifications">
+                    <i class="fa-regular fa-bell text-base"></i>
+                    <span class="absolute top-1 right-1 w-2 h-2 bg-indigo-600 rounded-full ring-2 ring-white"></span>
+                </button>
+
+                <button onclick="showToast('Fabric Explorer documentation and help guides', 'info')" class="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-colors" title="Help & Guides">
+                    <i class="fa-regular fa-circle-question text-base"></i>
+                </button>
+
+                <div class="h-5 w-px bg-slate-200 my-auto"></div>
+
+                <span class="hidden sm:inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>
+                    Production
+                </span>
+
+                <!-- User Account Profile -->
+                <div class="relative" id="userMenuContainer">
+                    <button onclick="toggleUserMenu()" class="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-100 transition-colors text-left">
+                        <div class="w-7 h-7 rounded-full bg-indigo-600 text-white font-semibold text-xs flex items-center justify-center shadow-sm">
+                            JD
+                        </div>
+                        <span class="hidden md:block text-xs font-semibold text-slate-700">John Doe</span>
+                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-400"></i>
+                    </button>
+
+                    <div id="userMenu" class="hidden absolute right-0 mt-1 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-2 z-50">
+                        <div class="px-4 py-2 border-b border-slate-100">
+                            <p class="text-xs font-semibold text-slate-800">John Doe</p>
+                            <p class="text-[11px] text-slate-500 truncate">john.doe@company.com</p>
+                            <span class="mt-1 inline-block text-[10px] bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-mono">Entra ID Authenticated</span>
+                        </div>
+                        <a href="#" onclick="switchTab('settings'); toggleUserMenu(); return false;" class="px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center space-x-2">
+                            <i class="fa-solid fa-gear text-slate-400 w-4"></i>
+                            <span>Account Settings</span>
+                        </a>
+                        <div class="border-t border-slate-100 my-1"></div>
+                        <button onclick="disconnectEntraID(); toggleUserMenu();" class="w-full text-left px-4 py-2 text-xs text-rose-600 hover:bg-rose-50 flex items-center space-x-2">
+                            <i class="fa-solid fa-arrow-right-from-bracket w-4"></i>
+                            <span>Sign Out Entra ID</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="flex-1 flex overflow-hidden relative">
+            
+            <!-- LEFT NAVIGATION SIDEBAR -->
+            <aside id="sidebar" class="w-60 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0 transition-all duration-200 z-10">
+                <div class="py-3 px-2 space-y-1">
+                    <button onclick="switchTab('connection')" id="nav-connection" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-all text-xs font-medium group active-nav-item">
+                        <i class="fa-solid fa-plug text-base text-indigo-600 w-5"></i>
+                        <span class="sidebar-text">Connection</span>
+                    </button>
+                    <button onclick="switchTab('discovery')" id="nav-discovery" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-all text-xs font-medium group">
+                        <i class="fa-solid fa-compass text-base text-slate-400 group-hover:text-indigo-600 w-5"></i>
+                        <span class="sidebar-text">Discovery</span>
+                    </button>
+                    <button onclick="switchTab('ingestion')" id="nav-ingestion" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-all text-xs font-medium group">
+                        <i class="fa-solid fa-circle-arrow-down text-base text-slate-400 group-hover:text-indigo-600 w-5"></i>
+                        <span class="sidebar-text">Ingestion</span>
+                    </button>
+                    <button onclick="switchTab('replication')" id="nav-replication" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-all text-xs font-medium group">
+                        <i class="fa-solid fa-arrows-rotate text-base text-slate-400 group-hover:text-indigo-600 w-5"></i>
+                        <span class="sidebar-text">Replication</span>
+                    </button>
+                    <button onclick="switchTab('jobinstances')" id="nav-jobinstances" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-all text-xs font-medium group">
+                        <i class="fa-solid fa-clock-rotate-left text-base text-slate-400 group-hover:text-indigo-600 w-5"></i>
+                        <span class="sidebar-text">Job Instances</span>
+                    </button>
+                    <button onclick="switchTab('settings')" id="nav-settings" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-100 transition-all text-xs font-medium group">
+                        <i class="fa-solid fa-gear text-base text-slate-400 group-hover:text-indigo-600 w-5"></i>
+                        <span class="sidebar-text">Settings</span>
+                    </button>
+                </div>
+
+                <div class="p-2 border-t border-slate-100 hidden md:block">
+                    <button onclick="toggleSidebarCollapse()" class="w-full flex items-center justify-between px-3 py-2 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors text-xs">
+                        <span class="sidebar-text font-medium">Collapse Sidebar</span>
+                        <i id="collapseIcon" class="fa-solid fa-angles-left"></i>
+                    </button>
+                </div>
+            </aside>
+
+            <main class="flex-1 overflow-y-auto bg-slate-50 p-4 md:p-6" id="mainContainer">
+                <!-- Views are injected by js/core/view-loader.js from /views/*.html -->
+            </main>
+        </div>
+
+        <!-- FOOTER STATUS BAR -->
+        <footer class="h-8 bg-white border-t border-slate-200 px-4 flex items-center justify-between text-xs text-slate-500 shrink-0 z-20">
+            <div class="flex items-center space-x-4">
+                <div class="flex items-center space-x-1.5" id="statusBarConnState">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="font-medium text-slate-700">Connected</span>
+                </div>
+                <span class="text-slate-300">|</span>
+                <span class="flex items-center space-x-1">
+                    <i class="fa-brands fa-microsoft text-msblue"></i>
+                    <span class="text-slate-600 font-medium">Microsoft Fabric</span>
+                </span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-slate-400 text-[11px]" id="statusLastRefreshLabel">Last refresh: Just now</span>
+            </div>
+        </footer>
+    </div>
+    <!-- Modals & drawers are injected from /partials/*.html -->
+    <div id="overlaysMount"></div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-12 right-4 z-50 flex flex-col space-y-2 max-w-sm w-full pointer-events-none"></div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>

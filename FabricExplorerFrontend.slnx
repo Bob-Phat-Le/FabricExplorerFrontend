@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="FabricExplorerFrontend/FabricExplorerFrontend.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+</Solution>

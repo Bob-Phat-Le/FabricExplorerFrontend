@@ -1,0 +1,111 @@
+<section id="view-connection" class="space-y-6 max-w-5xl mx-auto">
+    <!-- Page Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-2">
+                <h1 class="text-xl font-bold text-slate-900 tracking-tight">Connection Management</h1>
+                <span class="bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">Single Active Session</span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">Manage and switch between your Microsoft Fabric environment connections.</p>
+        </div>
+        <button type="button" onclick="openEntraOAuthModal(false)" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center space-x-2 shrink-0">
+            <i class="fa-solid fa-plus"></i>
+            <span>Add Connection</span>
+        </button>
+    </div>
+
+    <!-- Active Connection Card Hero Banner -->
+    <div id="activeConnectionCard" class="bg-white rounded-xl border border-indigo-200 shadow-sm p-6 space-y-5 ring-1 ring-indigo-500/10">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-700 text-white flex items-center justify-center text-xl shadow-md shrink-0">
+                    <i class="fa-solid fa-plug-circle-check"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <h2 class="text-base font-bold text-slate-900" id="displayActiveConnTitle">Production Fabric</h2>
+                        <span id="displayActiveEnvBadge" class="text-[10px] bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">Production</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">Currently Active Connection · Microsoft Entra ID OAuth 2.0</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="connStatusBadge" class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+                    Active Session
+                </span>
+            </div>
+        </div>
+
+        <!-- Configured Active Credentials Details -->
+        <dl class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200 space-y-1">
+                <dt class="text-slate-400 font-medium flex items-center justify-between">
+                    <span>Target Workspace</span>
+                    <i class="fa-solid fa-cubes text-[11px] text-indigo-500"></i>
+                </dt>
+                <dd class="font-bold text-slate-900 truncate" id="cardWsName">Production Analytics</dd>
+                <dd class="font-mono text-[10px] text-slate-400 truncate" id="cardWsId">12345678-abcd-1234-abcd-1234567890ab</dd>
+            </div>
+
+            <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200 space-y-1">
+                <dt class="text-slate-400 font-medium flex items-center justify-between">
+                    <span>Token Endpoint</span>
+                    <i class="fa-solid fa-shield-halved text-[11px] text-slate-400"></i>
+                </dt>
+                <dd class="font-mono text-slate-800 truncate" id="cardTokenEndpoint" title="https://login.microsoftonline.com/72f988bf-86f1-41af-91ab-2d7cd011db47/oauth2/v2.0/token">
+                    login.microsoftonline.com/.../token
+                </dd>
+            </div>
+
+            <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200 space-y-1">
+                <dt class="text-slate-400 font-medium">Client ID</dt>
+                <dd class="font-mono text-slate-800 truncate" id="cardClientId">
+                    8f3e1a2b-9c4d-4e5f-8a1b-3c5d7e9f2a4b
+                </dd>
+            </div>
+
+            <div class="bg-slate-50/80 p-3.5 rounded-xl border border-slate-200 space-y-1">
+                <dt class="text-slate-400 font-medium flex items-center justify-between">
+                    <span>Client Secret</span>
+                    <i class="fa-solid fa-lock text-[11px] text-indigo-500"></i>
+                </dt>
+                <dd class="font-mono text-slate-500">
+                    ••••••••••••••••••••••••
+                </dd>
+            </div>
+        </dl>
+
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+            <span class="text-slate-400 flex items-center space-x-1">
+                <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                <span>Fabric Explorer API requests will run against this environment</span>
+            </span>
+            <div class="flex items-center space-x-2">
+                <button type="button" onclick="testSavedConnection()" class="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition-colors">
+                    Test Connection
+                </button>
+                <button type="button" onclick="openEntraOAuthModal(true)" class="px-3.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition-colors flex items-center space-x-1.5">
+                    <i class="fa-solid fa-pen-to-square text-slate-400"></i>
+                    <span>Edit</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SAVED CONNECTIONS GRID SECTION -->
+    <div class="space-y-4">
+        <div class="flex items-center justify-between">
+            <div>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight">Saved Connections</h3>
+                <p class="text-xs text-slate-500">Select any connection below to switch the active working environment.</p>
+            </div>
+            <span class="text-xs font-mono text-slate-400" id="connCountLabel">2 Saved Profiles</span>
+        </div>
+
+        <!-- Connections Grid Container -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="connectionsGridContainer">
+            <!-- Dynamic Connection Cards Rendered via JS -->
+        </div>
+    </div>
+</section>

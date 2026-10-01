@@ -1,0 +1,39 @@
+<section id="view-settings" class="hidden space-y-6 max-w-4xl mx-auto">
+    <div>
+        <h1 class="text-xl font-bold text-slate-900 tracking-tight">Settings</h1>
+        <p class="text-xs text-slate-500 mt-0.5">System preferences and account configuration.</p>
+    </div>
+
+    <div class="space-y-4">
+        <!-- General Preferences Card -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+            <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">General</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Default Workspace</label>
+                    <select class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 outline-none">
+                        <option>Analytics Workspace</option>
+                        <option>Data Platform</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-slate-700 font-semibold mb-1">Default Environment</label>
+                    <select class="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 outline-none">
+                        <option>Production</option>
+                        <option>Staging</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- About Fabric Explorer -->
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-2">
+            <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">About Fabric Explorer</h3>
+            <div class="flex items-center justify-between text-xs pt-1">
+                <span class="font-bold text-slate-800">Version</span>
+                <span class="font-mono text-slate-500">1.0.0</span>
+            </div>
+            <p class="text-slate-500 text-xs">Microsoft Fabric management, discovery, and ingestion tool.</p>
+        </div>
+    </div>
+</section>
