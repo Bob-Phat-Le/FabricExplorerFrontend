@@ -34,3 +34,15 @@ export const jobs = [
     { id: '7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b', jobType: 'NotebookJob', invokeType: 'Manual', status: 'Failed', startTime: '2026-03-15T12:10:00.000Z', endTime: '2026-03-15T12:12:15.000Z', rootActivityId: '0c1d2e3f-4a5b-6c7d-8e9f-0a1b2c3d4e5f', errorMsg: 'ErrorCode: SchemaTypeConflictException - Target table schema mismatch.' },
     { id: '3b4c5d6e-7f8a-9b0c-1d2e-3f4a5b6c7d8e', jobType: 'DefaultJob', invokeType: 'Scheduled', status: 'Deduped', startTime: '2026-03-15T11:00:00.000Z', endTime: '2026-03-15T11:00:00.000Z', rootActivityId: '1d2e3f4a-5b6c-7d8e-9f0a-1b2c3d4e5f6a' }
 ];
+
+const WS = '12345678-abcd-1234-abcd-1234567890ab';
+export const workspaces = [{ workspaceId: WS, workspaceName: 'Production Analytics', capacityId: null }];
+export const lakehouses = [
+    { lakehouseId: '431e8d7b-4a95-4c02-8ccd-6faef5ba1bd7', lakehouseName: 'Sales Analytics Lakehouse', workspaceId: WS, workspaceName: 'Production Analytics', connectionId: 'conn-1' },
+];
+export const warehouses = [
+    { warehouseId: '9c6c8d7b-1a2b-3c4d-5e6f-7a8b9c0d1e2f', warehouseName: 'Sales Warehouse', workspaceId: WS, workspaceName: 'Production Analytics', connectionId: 'conn-1' },
+];
+export const mirroredDbs = [
+    { mirroredDatabaseId: '8a421e3f-9b8c-7d6e-5f4a-3b2c1d0e9f8a', mirroredDatabaseName: 'CustomerDB', workspaceId: WS, workspaceName: 'Production Analytics', sourceType: 'AzureSqlDatabase', sourceName: 'CustomerSource', createdAt: null, status: 'Active', mirroringStatus: 'Running' },
+];

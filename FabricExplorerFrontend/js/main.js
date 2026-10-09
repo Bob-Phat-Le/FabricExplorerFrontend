@@ -17,6 +17,7 @@ window.formState = formState;   // được HTML tham chiếu trực tiếp (oni
 window.replState = replState;
 
 router.onViewEnter('connection', connection.loadConnections);   // luôn lấy dữ liệu mới khi vào tab
+router.onViewEnter('discovery', discovery.loadDiscoveryResources);   // nạp dropdown theo connection đang active
 router.onViewEnter('replication', replication.updateReplUI);
 router.onViewEnter('jobinstances', () => {
     jobInstances.renderJobInstancesUI();

@@ -30,13 +30,35 @@ export const mocks = {
             return ok();
         },
     },
+    // Dữ liệu mẫu có cùng hình dạng với response thật của backend (sau khi api layer bóc `data`).
     discovery: {
-        tables: () => [],
-        warehouse: () => ({}),
-        connString: () => ({ connectionString: 'Data Source=sales_wh.pbidev.net;Initial Catalog=SalesWH;Integrate Security=True;' }),
-        mirroredDb: () => ({}),
-        mirroringStatus: () => ({ status: 'Running' }),
-        tablesStatus: () => [],
+        workspaces: () => seeds.workspaces,
+        lakehouses: () => seeds.lakehouses,
+        tables: () => ({
+            items: [
+                { name: 'Customers', type: 'Managed', format: 'delta', location: 'Tables/Customers', rowCount: 125420, lastModifiedTime: new Date(Date.now() - 2 * 60e3).toISOString(), status: 'Healthy', statusMessage: null },
+                { name: 'Orders', type: 'Managed', format: 'delta', location: 'Tables/Orders', rowCount: 842301, lastModifiedTime: new Date(Date.now() - 5 * 60e3).toISOString(), status: 'Healthy', statusMessage: null },
+                { name: 'Staging', type: 'Managed', format: 'delta', location: 'Tables/Staging', rowCount: 0, lastModifiedTime: null, status: 'Empty', statusMessage: 'Table has no rows.' },
+            ],
+            pageInformation: { totalItems: 3, pageSize: 50, hasNextPage: false, nextToken: null },
+        }),
+        warehouses: () => seeds.warehouses,
+        warehouse: () => ({
+            id: seeds.warehouses[0].warehouseId, name: 'Sales Warehouse', description: null,
+            onlineStatus: 'Online', onlineStatusMessage: null,
+            workspace: { id: seeds.warehouses[0].workspaceId, name: 'Production Analytics', capacityId: null },
+            createdDate: '2026-01-12T08:00:00Z', lastUpdatedTime: new Date().toISOString(),
+        }),
+        connString: () => ({ warehouseId: seeds.warehouses[0].warehouseId, connectionString: 'abc123.datawarehouse.fabric.microsoft.com', database: 'SalesWH' }),
+        mirroredDbs: () => seeds.mirroredDbs,
+        mirroredDb: () => seeds.mirroredDbs[0],
+        mirroringStatus: () => ({ lastSynchronization: new Date(Date.now() - 2 * 60e3).toISOString(), recordSynchronized: 1248392, currentLatency: 18, status: 'Running' }),
+        mirroringAction: () => ({ message: 'Mirroring request accepted.', operationId: null }),
+        tablesStatus: () => [
+            { tableName: 'Customers', source: 'dbo.Customers', target: 'dbo.Customers', status: 'Replicating', lastSync: new Date(Date.now() - 60e3).toISOString(), lag: 3, processedRows: 125420 },
+            { tableName: 'Orders', source: 'dbo.Orders', target: 'dbo.Orders', status: 'Snapshotting', lastSync: new Date().toISOString(), lag: 12, processedRows: 842301 },
+            { tableName: 'Products', source: 'dbo.Products', target: 'dbo.Products', status: 'Failed', lastSync: new Date(Date.now() - 8 * 60e3).toISOString(), lag: 120, processedRows: 24820 },
+        ],
     },
     ingestion: {
         submit: req => {
