@@ -38,14 +38,22 @@ Phải phục vụ qua HTTP (view được nạp bằng `fetch`, không mở b�
 | connections.testSaved | POST /connections/:id/test | |
 | connections.activate | POST /connections/:id/active | |
 | auth.logout | POST /auth/logout | |
-| discovery.* | GET /discovery/lakehouse/tables · /warehouse · /warehouse/connection-string · /mirrored-db · /mirrored-db/status · /mirrored-db/tables/status; POST /mirrored-db/start · /stop | query `workspaceId` |
+| discovery.listWorkspaces | GET /Workspaces | **backend cần cung cấp** (xem BackendPatch_Workspaces.zip). Header `X-Connection-Id` dùng cho mọi endpoint discovery; connection chỉ cấp tenant/client id/secret |
+| discovery.listLakehouses | GET /workspaces/:ws/Lakehouses | gọi cho từng workspace rồi gộp vào một dropdown |
+| discovery.listLakehouseTables | GET /workspaces/:ws/Lakehouses/:id/tables?pageSize=&continuationToken= | `{ items, pageInformation.nextToken }`; "Load more" dùng nextToken |
+| discovery.listWarehouses / getWarehouse | GET /workspaces/:ws/Warehouses · /:id | |
+| discovery.getWarehouseConnectionString | GET /workspaces/:ws/Warehouses/:id/connection-string | `{ connectionString, database }` |
+| discovery.listMirroredDatabases / getMirroredDb | GET /workspaces/:ws/MirroredDatabases · /:id | `createdAt` có thể null (Fabric không cung cấp) |
+| discovery.getMirroringStatus | GET .../MirroredDatabases/:id/status | `lastSynchronization`, `recordSynchronized`, `currentLatency` (giây), `status` |
+| discovery.startMirroring / stopMirroring | POST .../MirroredDatabases/:id/start · /stop | UI poll `/status` đến khi Running/Stopped |
+| discovery.getTablesMirroringStatus | GET .../MirroredDatabases/:id/tables/status | `tableName`, `source`, `target`, `status`, `lastSync`, `lag` (giây) |
 | ingestion.submit | POST /ingestions | multipart: `config` (JSON) + `file` |
 | replication.start | POST /replications | body = `replState` |
 | items.list / create | GET, POST /items | |
 | items.listJobs | GET /items/:id/jobs?continuationToken= | → `{ items, continuationToken }` |
 
 ## Còn dang dở (đánh dấu `TODO(api)` trong code)
-- Các thẻ Discovery đã gọi API nhưng **chưa render dữ liệu trả về** — HTML vẫn là bản tĩnh như gốc.
+- Discovery đã gọi API thật và render dữ liệu thật (dropdown liệt kê item của MỌI workspace mà connection active nhìn thấy; mỗi item mang workspaceId riêng).
 - Bảng lịch sử Ingestion/Replication vẫn là hàng HTML cứng (`ingestion.list`, `replication.list` có sẵn nhưng chưa nối).
 - Dropzone vẫn giả lập file (`simulateSelectFile`); chưa có `<input type="file">` thật nên `ingestion.submit` nhận `file = null`.
 - Lọc/tìm kiếm Job Instances và auto-refresh vốn là hàm rỗng trong file gốc, giữ nguyên.

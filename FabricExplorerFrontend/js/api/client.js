@@ -37,10 +37,14 @@ export async function request({ method = 'GET', path, query, body, headers = {},
         if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
     });
 
+    // Người gọi chủ động hủy (đổi lựa chọn...): phân biệt với timeout để không báo lỗi nhầm
+    if (signal?.aborted) throw new ApiError('Request cancelled', { code: 'ABORTED' });
+
     const isForm = body instanceof FormData;
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), API_CONFIG.timeoutMs);
-    signal?.addEventListener('abort', () => ctrl.abort());
+    const onAbort = () => ctrl.abort();
+    signal?.addEventListener('abort', onAbort, { once: true });
 
     let res;
     try {
@@ -56,6 +60,8 @@ export async function request({ method = 'GET', path, query, body, headers = {},
             signal: ctrl.signal,
         });
     } catch (e) {
+        // Khi fetch bị hủy, trình duyệt ngắt kết nối nên backend nhận được CancellationToken và dừng công việc đang làm
+        if (signal?.aborted) throw new ApiError('Request cancelled', { code: 'ABORTED' });
         throw new ApiError(
             e.name === 'AbortError'
                 ? 'Request timed out'
@@ -64,6 +70,7 @@ export async function request({ method = 'GET', path, query, body, headers = {},
         );
     } finally {
         clearTimeout(timer);
+        signal?.removeEventListener('abort', onAbort);
     }
 
     const payload = res.status === 204 ? null : await res.json().catch(() => null);

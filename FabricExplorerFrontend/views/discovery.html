@@ -48,11 +48,12 @@
     <div id="disc-sub-lakehouse" class="space-y-6">
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
             <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-700">Lakehouse</label>
-                <select class="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <option>Sales Lakehouse (Analytics Workspace)</option>
-                    <option>Finance Lakehouse (Finance Workspace)</option>
-                    <option>Customer Lakehouse (Data Platform Workspace)</option>
+                <div class="flex items-center justify-between">
+                    <label for="lakehouseSelect" class="block text-xs font-semibold text-slate-700">Lakehouse</label>
+                    <button type="button" onclick="reloadDiscoveryList('lakehouse')" class="text-[11px] text-indigo-600 font-semibold hover:underline">Reload</button>
+                </div>
+                <select id="lakehouseSelect" onchange="onDiscoverySelectionChange('lakehouse')" disabled class="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-50 disabled:text-slate-400">
+                    <option value="">Loading…</option>
                 </select>
             </div>
 
@@ -84,7 +85,7 @@
                                 <p class="text-[11px] text-slate-500">View all tables available in Lakehouse</p>
                             </div>
                         </div>
-                        <button type="button" onclick="executeListTables()" class="w-full py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition-colors">
+                        <button type="button" id="btnListTables" onclick="executeListTables()" class="w-full py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-lg text-xs font-semibold transition-colors">
                             List Tables
                         </button>
                     </div>
@@ -100,7 +101,7 @@
                     <input type="text" id="lakeTableSearch" oninput="filterLakehouseGrid()" placeholder="Search tables..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div class="flex items-center space-x-2">
-                    <button onclick="showToast('Refreshed Lakehouse table list', 'info')" class="px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-slate-600 text-xs font-semibold hover:bg-slate-50 flex items-center space-x-1.5">
+                    <button type="button" id="btnRefreshTables" onclick="refreshTables()" class="px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-slate-600 text-xs font-semibold hover:bg-slate-50 flex items-center space-x-1.5">
                         <i class="fa-solid fa-rotate-right text-slate-400"></i>
                         <span>Refresh</span>
                     </button>
@@ -119,33 +120,13 @@
                             <th class="p-3 text-right pr-4">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-                        <tr class="hover:bg-slate-50 lake-row">
-                            <td class="p-3 pl-4 font-bold text-slate-900">Customers</td>
-                            <td class="p-3 font-mono">Delta</td>
-                            <td class="p-3 font-mono">125,420</td>
-                            <td class="p-3 text-slate-500">2 min ago</td>
-                            <td class="p-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">● Ready</span></td>
-                            <td class="p-3 text-right pr-4"><button onclick="inspectTable('Customers')" class="text-indigo-600 font-semibold hover:underline">View</button></td>
-                        </tr>
-                        <tr class="hover:bg-slate-50 lake-row">
-                            <td class="p-3 pl-4 font-bold text-slate-900">Orders</td>
-                            <td class="p-3 font-mono">Delta</td>
-                            <td class="p-3 font-mono">842,301</td>
-                            <td class="p-3 text-slate-500">5 min ago</td>
-                            <td class="p-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">● Ready</span></td>
-                            <td class="p-3 text-right pr-4"><button onclick="inspectTable('Orders')" class="text-indigo-600 font-semibold hover:underline">View</button></td>
-                        </tr>
-                        <tr class="hover:bg-slate-50 lake-row">
-                            <td class="p-3 pl-4 font-bold text-slate-900">Products</td>
-                            <td class="p-3 font-mono">Delta</td>
-                            <td class="p-3 font-mono">24,820</td>
-                            <td class="p-3 text-slate-500">1 hr ago</td>
-                            <td class="p-3"><span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">● Ready</span></td>
-                            <td class="p-3 text-right pr-4"><button onclick="inspectTable('Products')" class="text-indigo-600 font-semibold hover:underline">View</button></td>
-                        </tr>
-                    </tbody>
+                    <tbody id="lakehouseTableBody" class="divide-y divide-slate-100 font-medium text-slate-700"></tbody>
                 </table>
+            </div>
+
+            <div class="p-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between text-xs text-slate-500">
+                <span id="lakehouseGridSummary"></span>
+                <button type="button" id="btnLakeLoadMore" onclick="loadMoreTables()" class="hidden px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-slate-600 font-semibold hover:bg-slate-50">Load more</button>
             </div>
         </div>
     </div>
@@ -154,17 +135,19 @@
     <div id="disc-sub-warehouse" class="hidden space-y-6">
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
             <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-700">Warehouse</label>
-                <select class="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <option>Sales Warehouse (Analytics Workspace)</option>
-                    <option>Finance Warehouse (Finance Workspace)</option>
+                <div class="flex items-center justify-between">
+                    <label for="warehouseSelect" class="block text-xs font-semibold text-slate-700">Warehouse</label>
+                    <button type="button" onclick="reloadDiscoveryList('warehouse')" class="text-[11px] text-indigo-600 font-semibold hover:underline">Reload</button>
+                </div>
+                <select id="warehouseSelect" onchange="onDiscoverySelectionChange('warehouse')" disabled class="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-50 disabled:text-slate-400">
+                    <option value="">Loading…</option>
                 </select>
             </div>
 
             <div class="pt-2 border-t border-slate-100">
                 <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Operations</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <button type="button" onclick="executeGetWarehouse()" class="p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-indigo-300 text-left space-y-1.5 transition-all">
+                    <button type="button" id="btnGetWarehouse" onclick="executeGetWarehouse()" class="p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-indigo-300 text-left space-y-1.5 transition-all">
                         <div class="flex items-center space-x-2 text-indigo-600 font-bold text-xs">
                             <i class="fa-solid fa-circle-info"></i>
                             <span>Get Warehouse</span>
@@ -172,7 +155,7 @@
                         <p class="text-[11px] text-slate-500">Retrieve information about the selected warehouse.</p>
                     </button>
 
-                    <button type="button" onclick="executeGetConnString()" class="p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-indigo-300 text-left space-y-1.5 transition-all">
+                    <button type="button" id="btnGetConnString" onclick="executeGetConnString()" class="p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-indigo-300 text-left space-y-1.5 transition-all">
                         <div class="flex items-center space-x-2 text-indigo-600 font-bold text-xs">
                             <i class="fa-solid fa-key"></i>
                             <span>Get Connection String</span>
@@ -187,12 +170,14 @@
         <div id="warehouseDetailsCard" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
             <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">Warehouse Details</h3>
             <dl class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-xs">
-                <div><dt class="text-slate-400">Name</dt><dd class="font-bold text-slate-800">Sales Warehouse</dd></div>
-                <div><dt class="text-slate-400">Status</dt><dd class="font-bold text-emerald-700">● Online</dd></div>
-                <div><dt class="text-slate-400">Workspace</dt><dd class="font-medium text-slate-800">Analytics Workspace</dd></div>
-                <div><dt class="text-slate-400">Created</dt><dd class="text-slate-700">Jan 12, 2026</dd></div>
-                <div><dt class="text-slate-400">Last Updated</dt><dd class="text-slate-700">Today, 14:20</dd></div>
+                <div><dt class="text-slate-400">Name</dt><dd id="whName" class="font-bold text-slate-800">—</dd></div>
+                <div><dt class="text-slate-400">Status</dt><dd id="whStatus" class="font-bold">—</dd></div>
+                <div><dt class="text-slate-400">Workspace</dt><dd id="whWorkspace" class="font-medium text-slate-800">—</dd></div>
+                <div><dt class="text-slate-400">Workspace ID</dt><dd id="whWorkspaceId" class="font-mono text-slate-700 break-all">—</dd></div>
+                <div><dt class="text-slate-400">Created</dt><dd id="whCreated" class="text-slate-700">—</dd></div>
+                <div><dt class="text-slate-400">Last Updated</dt><dd id="whUpdated" class="text-slate-700">—</dd></div>
             </dl>
+            <p id="whStatusMessage" class="hidden text-[11px] text-slate-500"></p>
         </div>
 
         <!-- Warehouse Connection String Card -->
@@ -212,21 +197,23 @@
     <div id="disc-sub-mirrored" class="hidden space-y-6">
         <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-4">
             <div class="space-y-1.5">
-                <label class="block text-xs font-semibold text-slate-700">Mirrored Database</label>
-                <select class="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <option>CustomerDB (Data Platform Workspace)</option>
-                    <option>SalesDB (Analytics Workspace)</option>
+                <div class="flex items-center justify-between">
+                    <label for="mirroredSelect" class="block text-xs font-semibold text-slate-700">Mirrored Database</label>
+                    <button type="button" onclick="reloadDiscoveryList('mirrored')" class="text-[11px] text-indigo-600 font-semibold hover:underline">Reload</button>
+                </div>
+                <select id="mirroredSelect" onchange="onDiscoverySelectionChange('mirrored')" disabled class="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none disabled:bg-slate-50 disabled:text-slate-400">
+                    <option value="">Loading…</option>
                 </select>
             </div>
 
             <div class="pt-2 border-t border-slate-100">
                 <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3">Operations</h3>
                 <div class="flex flex-wrap gap-2">
-                    <button type="button" onclick="executeGetMirroredDb()" class="px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">Get Mirrored DB</button>
-                    <button type="button" onclick="executeGetMirroringStatus()" class="px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">Get Status</button>
-                    <button type="button" onclick="openStartMirrorModal()" class="px-3.5 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-100">Start Mirroring</button>
-                    <button type="button" onclick="openStopMirrorModal()" class="px-3.5 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-100">Stop Mirroring</button>
-                    <button type="button" onclick="executeGetTablesMirroringStatus()" class="px-3.5 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Tables Status</button>
+                    <button type="button" id="btnGetMirroredDb" onclick="executeGetMirroredDb()" class="px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">Get Mirrored DB</button>
+                    <button type="button" id="btnGetMirroringStatus" onclick="executeGetMirroringStatus()" class="px-3.5 py-2 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-700 hover:bg-slate-50">Get Status</button>
+                    <button type="button" id="btnStartMirroring" onclick="openStartMirrorModal()" class="px-3.5 py-2 bg-emerald-50 border border-emerald-200 rounded-lg text-xs font-semibold text-emerald-700 hover:bg-emerald-100">Start Mirroring</button>
+                    <button type="button" id="btnStopMirroring" onclick="openStopMirrorModal()" class="px-3.5 py-2 bg-rose-50 border border-rose-200 rounded-lg text-xs font-semibold text-rose-700 hover:bg-rose-100">Stop Mirroring</button>
+                    <button type="button" id="btnTablesStatus" onclick="executeGetTablesMirroringStatus()" class="px-3.5 py-2 bg-indigo-50 border border-indigo-200 rounded-lg text-xs font-semibold text-indigo-700 hover:bg-indigo-100">Tables Status</button>
                 </div>
             </div>
         </div>
@@ -235,11 +222,11 @@
         <div id="mirroredDbDetailsCard" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-3">
             <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">Database Details</h3>
             <dl class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                <div><dt class="text-slate-400">Name</dt><dd class="font-bold text-slate-900">CustomerDB</dd></div>
-                <div><dt class="text-slate-400">Workspace</dt><dd class="font-medium text-slate-700">Data Platform</dd></div>
-                <div><dt class="text-slate-400">Status</dt><dd class="font-bold text-emerald-700">● Active</dd></div>
-                <div><dt class="text-slate-400">Source</dt><dd class="font-mono text-slate-700">Azure SQL Database</dd></div>
-                <div><dt class="text-slate-400">Created</dt><dd class="text-slate-700">Mar 10, 2026</dd></div>
+                <div><dt class="text-slate-400">Name</dt><dd id="mdbName" class="font-bold text-slate-900">—</dd></div>
+                <div><dt class="text-slate-400">Workspace</dt><dd id="mdbWorkspace" class="font-medium text-slate-700">—</dd></div>
+                <div><dt class="text-slate-400">Status</dt><dd id="mdbStatus" class="font-bold">—</dd></div>
+                <div><dt class="text-slate-400">Source</dt><dd id="mdbSource" class="font-mono text-slate-700">—</dd></div>
+                <div><dt class="text-slate-400">Created</dt><dd id="mdbCreated" class="text-slate-700" title="Fabric does not expose the creation date of mirrored databases">—</dd></div>
             </dl>
         </div>
 
@@ -247,12 +234,12 @@
         <div id="mirroringStatusCard" class="hidden bg-white rounded-xl border border-slate-200 shadow-sm p-6 space-y-3">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                 <h3 class="text-xs font-bold text-slate-900 uppercase tracking-wider">Mirroring Status</h3>
-                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">● Running</span>
+                <span id="mirroringStatusBadge"></span>
             </div>
             <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-1">
-                <div><dt class="text-slate-400">Last Synchronization</dt><dd class="font-semibold text-slate-800">2 minutes ago</dd></div>
-                <div><dt class="text-slate-400">Records Synchronized</dt><dd class="font-mono font-bold text-slate-900">1,248,392</dd></div>
-                <div><dt class="text-slate-400">Current Latency</dt><dd class="font-semibold text-emerald-700">18 seconds</dd></div>
+                <div><dt class="text-slate-400">Last Synchronization</dt><dd id="msLastSync" class="font-semibold text-slate-800">—</dd></div>
+                <div><dt class="text-slate-400">Records Synchronized</dt><dd id="msRecords" class="font-mono font-bold text-slate-900">—</dd></div>
+                <div><dt class="text-slate-400">Current Latency</dt><dd id="msLatency" class="font-semibold text-slate-800">—</dd></div>
             </dl>
         </div>
 
@@ -273,11 +260,7 @@
                             <th class="p-3">Lag</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-100 font-medium text-slate-700">
-                        <tr><td class="p-3 pl-4 font-bold text-slate-900">Customers</td><td class="p-3 font-mono">SQL</td><td class="p-3 font-mono">Fabric</td><td class="p-3 text-emerald-700">● Synced</td><td class="p-3 text-slate-500">1 min ago</td><td class="p-3 font-mono">3 sec</td></tr>
-                        <tr><td class="p-3 pl-4 font-bold text-slate-900">Orders</td><td class="p-3 font-mono">SQL</td><td class="p-3 font-mono">Fabric</td><td class="p-3 text-indigo-700">● Syncing</td><td class="p-3 text-slate-500">Just now</td><td class="p-3 font-mono">12 sec</td></tr>
-                        <tr><td class="p-3 pl-4 font-bold text-slate-900">Products</td><td class="p-3 font-mono">SQL</td><td class="p-3 font-mono">Fabric</td><td class="p-3 text-amber-700">⚠ Delayed</td><td class="p-3 text-slate-500">8 min ago</td><td class="p-3 font-mono">2 min</td></tr>
-                    </tbody>
+                    <tbody id="tablesMirroringBody" class="divide-y divide-slate-100 font-medium text-slate-700"></tbody>
                 </table>
             </div>
         </div>
