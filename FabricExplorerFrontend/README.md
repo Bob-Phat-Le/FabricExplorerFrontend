@@ -1,4 +1,3 @@
-# Fabric Explorer — cấu trúc sau khi tách
 
 File gốc (3.219 dòng) được tách thành module. **Hành vi UI giữ nguyên**; khác biệt duy nhất là mọi thao tác "gọi backend" giờ đi qua `js/api/`.
 
