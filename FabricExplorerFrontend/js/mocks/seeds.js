@@ -1,4 +1,3 @@
-// Dữ liệu mẫu cũ (trước đây nằm cứng trong file god). Chỉ dùng khi API_CONFIG.useMock = true.
 export const connections = [
     {
         id: 'conn-1',

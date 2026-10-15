@@ -1,4 +1,3 @@
-// Modal tạo Fabric item (3 bước).
 import * as store from '../state/store.js';
 import { showApiError } from '../core/ui.js';
 import { selectMonitoredItem } from './job-instances.js';

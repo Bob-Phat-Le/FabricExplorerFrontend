@@ -1,14 +1,8 @@
-// Trang Discovery: Lakehouse / Warehouse / Mirrored Database.
-//
-// Luồng dữ liệu: connection đang active (store) -> nạp dropdown của resource đang xem (lazy, theo từng sub-view)
-// -> người dùng chọn item -> bấm action -> gọi API -> render thẳng dữ liệu thật vào card/lưới.
 import * as store from '../state/store.js';
 import { copyToClipboard, escapeHtml, showApiError, showToast } from '../core/ui.js';
 import { formatDateTime, formatNumber, formatSeconds, timeAgo } from '../core/format.js';
 import { sleep } from '../api/client.js';
 import * as discoveryApi from '../api/discovery.api.js';
-
-/* ───────────── helpers ───────────── */
 
 const $ = id => document.getElementById(id);
 const setText = (id, text) => { const el = $(id); if (el) el.innerText = text; };
@@ -32,19 +26,12 @@ function badge(label, tone = 'muted', title = '') {
     return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border ${TONES[tone]}"${titleAttr}>● ${escapeHtml(label)}</span>`;
 }
 
-// Giá trị status do backend trả về (enum dạng chuỗi) -> màu hiển thị.
 const TABLE_STATUS_TONE = { Healthy: 'ok', Empty: 'muted', Stale: 'warn', Error: 'bad', Unknown: 'muted' };
 const ONLINE_STATUS_TONE = { Online: 'ok', Offline: 'bad', Unknown: 'muted' };
 const DB_STATUS_TONE = { Active: 'ok', Offline: 'bad', Unknown: 'muted' };
 const MIRRORING_STATUS_TONE = { Running: 'ok', Starting: 'info', Initializing: 'info', Stopping: 'warn', Stopped: 'muted', Paused: 'muted', Initialized: 'muted', Unknown: 'muted' };
 const TABLE_MIRRORING_TONE = { Replicating: 'ok', Snapshotting: 'info', Reseeding: 'info', Initialized: 'info', Stopped: 'muted', Failed: 'bad', Unknown: 'muted' };
 
-/**
- * Mỗi `key` chỉ có một request "hiện hành". Request mới (hoặc người dùng đổi lựa chọn) sẽ:
- *  - hủy request cũ qua AbortSignal -> trình duyệt ngắt kết nối nên backend dừng công việc đang làm;
- *  - làm `isCurrent()` của request cũ trả false -> kết quả muộn bị bỏ, không ghi đè giao diện.
- * Dùng `isCurrent.signal` để truyền vào API call.
- */
 const seqs = {};
 const ctrls = {};
 function latest(key) {
@@ -68,10 +55,6 @@ async function withBusy(ids, fn) {
     try { await fn(); } finally { set(false); }
 }
 
-/**
- * Connection đang active chỉ dùng để xác thực (X-Connection-Id -> tenant / client id / secret).
- * Workspace không lấy từ connection mà từ mỗi item được chọn trong dropdown.
- */
 function context() {
     const conn = store.connections.activeConnection;
     return conn ? { connectionId: conn.id } : null;
@@ -82,8 +65,6 @@ function requireContext() {
     if (!ctx) showToast('Set an active connection first (Connection tab).', 'warning');
     return ctx;
 }
-
-/* ───────────── resource switcher + dropdowns ───────────── */
 
 const RESOURCES = {
     lakehouse: {
@@ -113,12 +94,12 @@ const ICON_ON = 'w-10 h-10 rounded-lg bg-indigo-600 text-white flex items-center
 const ICON_OFF = 'w-10 h-10 rounded-lg bg-slate-100 text-slate-700 group-hover:bg-indigo-50 group-hover:text-indigo-600 flex items-center justify-center text-lg font-bold transition-colors';
 
 let currentResource = 'lakehouse';
-const loadedFor = {};          // resource -> connectionId đã nạp dropdown
-const workspaceCache = {};     // connectionId -> Promise<workspace[]> (dùng chung cho 3 dropdown)
+const loadedFor = {};
+const workspaceCache = {};
 const WORKSPACE_FETCH_CONCURRENCY = 4;
-const listSeq = {};            // resource -> số thứ tự lần nạp dropdown gần nhất
-const lists = {};              // resource -> item đã nạp (mỗi item mang workspaceId của nó)
-const listCtrl = {};           // resource -> AbortController của lần nạp dropdown đang chạy
+const listSeq = {};
+const lists = {};
+const listCtrl = {};
 
 export function switchDiscoveryResource(resType) {
     currentResource = resType;
@@ -135,7 +116,6 @@ export function switchDiscoveryResource(resType) {
     ensureLoaded(resType);
 }
 
-/** Gọi khi vào tab Discovery: connection active có thể đã đổi nên nạp lại dropdown nếu cần. */
 export function loadDiscoveryResources() {
     return ensureLoaded(currentResource);
 }
@@ -144,7 +124,6 @@ export function reloadDiscoveryList(resType) {
     return ensureLoaded(resType, { force: true });
 }
 
-/** Đổi lựa chọn trong dropdown: kết quả cũ không còn đúng nữa nên ẩn đi và huỷ request đang chạy. */
 export function onDiscoverySelectionChange(resType) {
     clearResults(resType);
 }
@@ -178,14 +157,12 @@ async function ensureLoaded(resType, { force = false } = {}) {
     if (!force && loadedFor[resType] === key) return;
     if (force) delete workspaceCache[key];
 
-    // Nạp lại thì hủy lần nạp cũ (các request list theo workspace đang bay sẽ bị ngắt ở backend)
     listCtrl[resType]?.abort();
     const ctrl = (listCtrl[resType] = new AbortController());
     const seq = (listSeq[resType] = (listSeq[resType] || 0) + 1);
     clearResults(resType);
     setPlaceholder(resType, 'Loading…');
     try {
-        // force (nút Reload) = bỏ qua cache của backend cho cả danh sách workspace lẫn danh sách item
         const { items, skipped } = await fetchFromAllWorkspaces(cfg, ctx, { refresh: force, signal: ctrl.signal });
         if (seq !== listSeq[resType]) return;
         lists[resType] = items;
@@ -208,17 +185,11 @@ async function ensureLoaded(resType, { force = false } = {}) {
     }
 }
 
-/** Workspace của connection; cache theo connection để 3 dropdown không gọi lại. */
 function getWorkspaces(ctx, refresh = false) {
-    // Không gắn signal: promise này được dùng chung bởi cả 3 dropdown, hủy một lần nạp không được làm hỏng các lần khác
     workspaceCache[ctx.connectionId] ||= discoveryApi.listWorkspaces({ ...ctx, refresh }).then(list => list ?? []);
     return workspaceCache[ctx.connectionId].catch(err => { delete workspaceCache[ctx.connectionId]; throw err; });
 }
 
-/**
- * Lấy danh sách workspace, rồi gọi endpoint list của resource cho TỪNG workspace (giới hạn song song) và gộp lại.
- * Workspace nào lỗi thì bỏ qua và đếm vào `skipped`; chỉ báo lỗi khi tất cả đều lỗi.
- */
 async function fetchFromAllWorkspaces(cfg, ctx, { refresh = false, signal } = {}) {
     const workspaces = await getWorkspaces(ctx, refresh);
     const results = new Array(workspaces.length);
@@ -229,7 +200,6 @@ async function fetchFromAllWorkspaces(cfg, ctx, { refresh = false, signal } = {}
             const i = next++;
             try {
                 const items = (await cfg.fetch({ ...ctx, workspaceId: workspaces[i].workspaceId, refresh, signal })) ?? [];
-                // Backend đã trả workspaceName; điền thêm từ danh sách workspace phòng khi thiếu.
                 results[i] = { ok: true, items: items.map(it => ({ ...it, workspaceId: it.workspaceId ?? workspaces[i].workspaceId, workspaceName: it.workspaceName ?? workspaces[i].workspaceName })) };
             } catch (err) {
                 console.warn(`Could not list ${cfg.noun}s in workspace ${workspaces[i].workspaceId}`, err);
@@ -238,7 +208,7 @@ async function fetchFromAllWorkspaces(cfg, ctx, { refresh = false, signal } = {}
         }
     }
     await Promise.all(Array.from({ length: Math.min(WORKSPACE_FETCH_CONCURRENCY, workspaces.length) }, worker));
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');   // bị thay bằng lần nạp mới hơn
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
     const failed = results.filter(r => !r.ok);
     if (workspaces.length && failed.length === workspaces.length) throw failed[0].err;
@@ -249,7 +219,6 @@ async function fetchFromAllWorkspaces(cfg, ctx, { refresh = false, signal } = {}
     return { items, skipped: failed.length };
 }
 
-/** Item đang chọn trong dropdown (kèm workspaceId của nó), hoặc null + toast nhắc chọn. */
 function selectedItem(resType) {
     const cfg = RESOURCES[resType];
     const id = $(cfg.selectId)?.value;
@@ -258,15 +227,13 @@ function selectedItem(resType) {
     return item ?? null;
 }
 
-/* ───────────── Lakehouse ───────────── */
 
 let lakeTables = [];
 let lakeNextToken = null;
-let lakeSelection = null;   // { workspaceId, lakehouseId } của lần List Tables gần nhất (dùng cho Load more)
+let lakeSelection = null;
 
 export function executeListTables() { return loadTables({ append: false }); }
 
-/** Nút Refresh trong lưới: bỏ qua cache thống kê bảng của backend và tính lại. */
 export function refreshTables() { return loadTables({ append: false, refresh: true }); }
 
 export function loadMoreTables() { return lakeNextToken ? loadTables({ append: true }) : undefined; }
@@ -332,8 +299,6 @@ function renderLakehouseGrid() {
     setText('lakehouseGridSummary', `Showing ${rows.length} of ${lakeTables.length} loaded table${lakeTables.length === 1 ? '' : 's'}${lakeNextToken ? ' (more available)' : ''}`);
     $('btnLakeLoadMore')?.classList.toggle('hidden', !lakeNextToken);
 }
-
-/* ───────────── Warehouse ───────────── */
 
 let connString = '';
 let isConnStringVisible = false;
@@ -403,15 +368,12 @@ export function copyConnString() {
     copyToClipboard(connString, 'Connection string copied');
 }
 
-/** Không giữ connection string trong bộ nhớ/DOM khi đã đổi sang warehouse khác. */
 function resetConnString() {
     connString = '';
     isConnStringVisible = false;
     setText('connStringText', MASK);
     setText('btnToggleConnStr', 'Show');
 }
-
-/* ───────────── Mirrored Database ───────────── */
 
 const STATUS_POLL_MS = 4000;
 const STATUS_POLL_MAX = 15;
@@ -434,7 +396,6 @@ export async function executeGetMirroredDb() {
                 + `<span class="ml-1.5 text-[11px] font-normal text-slate-400">${escapeHtml(db.mirroringStatus ?? '')}</span>`);
             setText('mdbSource', [db.sourceName, db.sourceType && db.sourceType !== db.sourceName ? `(${db.sourceType})` : '']
                 .filter(Boolean).join(' ') || EMPTY);
-            // Fabric không cung cấp ngày tạo cho mirrored database nên backend trả null.
             setText('mdbCreated', db.createdAt ? formatDateTime(db.createdAt) : 'Not available');
             show('mirroredDbDetailsCard');
         } catch (err) {
@@ -489,7 +450,6 @@ async function changeMirroring(action) {
     await withBusy(['btnStartMirroring', 'btnStopMirroring'], async () => {
         try {
             const api = isStart ? discoveryApi.startMirroring : discoveryApi.stopMirroring;
-            // Start/Stop là thao tác thay đổi trạng thái: không gắn signal (backend cũng không hủy giữa chừng)
             const result = await api(target);
             if (!isCurrent()) return;
             showToast(escapeHtml(result?.message || (isStart ? 'Mirroring process started' : 'Mirroring process stopped')), isStart ? 'success' : 'warning');
@@ -497,12 +457,10 @@ async function changeMirroring(action) {
             if (isCurrent()) showApiError(err, isStart ? 'Could not start mirroring' : 'Could not stop mirroring');
             return;
         }
-        // Fabric chuyển trạng thái bất đồng bộ (Starting -> Running, Stopping -> Stopped): theo dõi để card luôn đúng.
         followMirroringStatus(target, isStart ? ['Running'] : ['Stopped']);
     });
 }
 
-/** Poll status sau start/stop đến khi đạt trạng thái đích (tối đa ~1 phút); đổi lựa chọn sẽ dừng. */
 async function followMirroringStatus(target, targets) {
     const isCurrent = latest('statusFollow');
     for (let i = 0; i < STATUS_POLL_MAX; i++) {

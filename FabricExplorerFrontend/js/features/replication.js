@@ -1,4 +1,3 @@
-// Trang Replication: wizard 6 bước Open Mirroring (PK, payload, row marker).
 import { replState } from '../state/store.js';
 import { showApiError, showToast } from '../core/ui.js';
 import * as replicationApi from '../api/replication.api.js';

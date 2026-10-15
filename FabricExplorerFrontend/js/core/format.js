@@ -1,4 +1,3 @@
-// Định dạng hiển thị dùng chung (số, ngày giờ, "x phút trước", khoảng thời gian).
 const dateTimeFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 const EMPTY = '—';
 
@@ -17,7 +16,6 @@ export function formatDateTime(value) {
     return d ? dateTimeFormat.format(d) : EMPTY;
 }
 
-/** "Just now" / "5 min ago" / "3 hr ago" / "2 days ago"; quá 7 ngày thì hiện ngày giờ đầy đủ. */
 export function timeAgo(value) {
     const d = toDate(value);
     if (!d) return EMPTY;
@@ -31,7 +29,6 @@ export function timeAgo(value) {
     return days <= 7 ? `${days} day${days === 1 ? '' : 's'} ago` : dateTimeFormat.format(d);
 }
 
-/** Số giây -> "18 sec" / "2 min" / "1.5 hr". */
 export function formatSeconds(value) {
     if (value === null || value === undefined) return EMPTY;
     const s = Number(value);

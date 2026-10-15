@@ -1,5 +1,3 @@
-// Điều hướng tab. Router KHÔNG import feature nào; feature đăng ký hook qua onViewEnter() trong main.js
-// (tránh vòng phụ thuộc và giúp thêm trang mới mà không sửa router).
 export const VIEW_IDS = ['connection', 'discovery', 'ingestion', 'replication', 'jobinstances', 'settings'];
 
 const enterHooks = {};

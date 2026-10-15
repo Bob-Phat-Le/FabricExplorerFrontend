@@ -1,43 +1,46 @@
-// HTTP client duy nhất của app. Mọi lời gọi backend đều đi qua request()/call().
 import { API_CONFIG } from './config.js';
 
 export class ApiError extends Error {
-    constructor(message, { status = 0, code = null, details = null } = {}) {
+    constructor(message, { status = 0, code = null, details = null, traceId = null } = {}) {
         super(message);
         this.name = 'ApiError';
         this.status = status;
         this.code = code;
         this.details = details;
+        this.traceId = traceId;
     }
 }
 
-/**
- * Rút thông điệp lỗi từ body. Hỗ trợ cả { message } lẫn ProblemDetails của ASP.NET Core
- * ({ title, detail, errors: { Field: ["msg"] } }).
- */
-function errorMessage(payload, status) {
-    if (payload?.message) return payload.message;
-    if (payload?.errors && typeof payload.errors === 'object') {
-        const first = Object.values(payload.errors).flat().filter(Boolean)[0];
-        if (first) return String(first);
+function parseError(payload, status) {
+    const err = payload?.error;
+    if (err && typeof err === 'object') {
+        return {
+            message: err.message || `HTTP ${status}`,
+            code: err.code ?? null,
+            details: err.details ?? null,
+            traceId: err.traceId ?? null,
+        };
     }
-    return payload?.detail || payload?.title || `HTTP ${status}`;
+
+    const fields = payload?.errors && typeof payload.errors === 'object' && !Array.isArray(payload.errors)
+        ? payload.errors : null;
+    const firstFieldError = fields ? Object.values(fields).flat().filter(Boolean)[0] : null;
+    return {
+        message: firstFieldError ? String(firstFieldError) : (payload?.detail || payload?.title || `HTTP ${status}`),
+        code: null,
+        details: fields,
+        traceId: payload?.traceId ?? null,
+    };
 }
 
 export const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/**
- * @param {{method?:string, path:string, query?:object, body?:object|FormData, headers?:object, signal?:AbortSignal}} req
- * Backend nên trả lỗi dạng { message, code, details } để ApiError hiển thị đúng lên toast.
- */
 export async function request({ method = 'GET', path, query, body, headers = {}, signal }) {
-    // baseUrl có thể là tuyệt đối ('http://localhost:8080/api') hoặc tương đối ('/api').
     const url = new URL(API_CONFIG.baseUrl + path, window.location.origin);
     Object.entries(query || {}).forEach(([k, v]) => {
         if (v !== undefined && v !== null && v !== '') url.searchParams.set(k, v);
     });
 
-    // Người gọi chủ động hủy (đổi lựa chọn...): phân biệt với timeout để không báo lỗi nhầm
     if (signal?.aborted) throw new ApiError('Request cancelled', { code: 'ABORTED' });
 
     const isForm = body instanceof FormData;
@@ -60,7 +63,6 @@ export async function request({ method = 'GET', path, query, body, headers = {},
             signal: ctrl.signal,
         });
     } catch (e) {
-        // Khi fetch bị hủy, trình duyệt ngắt kết nối nên backend nhận được CancellationToken và dừng công việc đang làm
         if (signal?.aborted) throw new ApiError('Request cancelled', { code: 'ABORTED' });
         throw new ApiError(
             e.name === 'AbortError'
@@ -75,16 +77,12 @@ export async function request({ method = 'GET', path, query, body, headers = {},
 
     const payload = res.status === 204 ? null : await res.json().catch(() => null);
     if (!res.ok) {
-        throw new ApiError(errorMessage(payload, res.status), {
-            status: res.status,
-            code: payload?.code ?? payload?.type ?? null,
-            details: payload?.details ?? payload?.errors ?? null,
-        });
+        const { message, code, details, traceId } = parseError(payload, res.status);
+        throw new ApiError(message, { status: res.status, code, details, traceId });
     }
     return payload;
 }
 
-/** Chạy request thật, hoặc mockHandler khi API_CONFIG.useMock = true. `meta` chỉ dùng cho mock, không gửi đi. */
 export async function call(req, mockHandler) {
     if (API_CONFIG.useMock) {
         await sleep(API_CONFIG.mockLatencyMs);

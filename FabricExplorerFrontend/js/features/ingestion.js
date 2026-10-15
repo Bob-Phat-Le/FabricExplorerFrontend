@@ -1,4 +1,3 @@
-// Trang Ingestion: wizard 5 bước upload file → bảng đích → post-load.
 import { formState } from '../state/store.js';
 import { showApiError, showToast } from '../core/ui.js';
 import * as ingestionApi from '../api/ingestion.api.js';
@@ -208,10 +207,8 @@ export function updateReviewSummary() {
 }
 
 export async function triggerIngestionExecution() {
-    // simOutcomeSelect chỉ để demo; khi useMock = false giá trị này KHÔNG được gửi đi.
     const simulateOutcome = document.getElementById('simOutcomeSelect')?.value || 'success';
     try {
-        // TODO(api): dropzone hiện chỉ giả lập file (simulateSelectFile). Khi có File thật, truyền vào tham số thứ 2.
         const job = await ingestionApi.submit({ ...formState }, null, { simulateOutcome });
         showToast(`Ingestion job for ${formState.fileName} completed successfully`, 'success');
         return job;

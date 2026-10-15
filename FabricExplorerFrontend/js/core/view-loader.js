@@ -1,4 +1,3 @@
-// Nạp HTML của từng view / modal / drawer vào DOM. Cần phục vụ qua HTTP (không mở bằng file://).
 const VIEWS = ['connection', 'discovery', 'ingestion', 'replication', 'jobinstances', 'settings'];
 const OVERLAYS = ['modal-oauth', 'modal-create-item', 'drawer-job-details'];
 

@@ -21,7 +21,8 @@ Phải phục vụ qua HTTP (view được nạp bằng `fetch`, không mở b�
 
 ## Chuyển sang backend thật
 1. `js/api/config.js`: đặt `useMock: false`, chỉnh `baseUrl`, điền `getAuthHeaders()`.
-2. Lỗi: `{ message, code, details }` hoặc ProblemDetails của ASP.NET (`title` / `detail` / `errors`) → tự hiện lên toast.
+2. Lỗi: đọc từ `ApiResponse<T>.error = { code, message, traceId, details }` → `ApiError { status, code, message, traceId, details }`, `message` tự hiện lên toast.
+   Trường `ApiResponse.errors` (string[]) **không còn được dùng**. Dự phòng cho response lỗi do ASP.NET tự sinh (ProblemDetails: `title` / `detail` / `errors` theo field).
    Backend cần bật CORS cho origin của frontend (cho cả `PATCH`).
 3. Sửa contract tại đúng 1 chỗ: file `*.api.js` tương ứng.
 

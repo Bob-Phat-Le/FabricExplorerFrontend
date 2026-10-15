@@ -1,7 +1,3 @@
-// Trang Connection: danh sách profile Entra ID / OAuth, kích hoạt, test, lưu.
-//
-// Luồng dữ liệu: loadConnections() (GET /connections + GET /connections/active) -> store.connections -> renderConnectionsGrid().
-// Mọi thao tác ghi (save / update / activate) đều kết thúc bằng loadConnections() để UI luôn khớp backend.
 import * as store from '../state/store.js';
 import { closeModal, escapeHtml, showApiError, showToast } from '../core/ui.js';
 import * as connectionsApi from '../api/connections.api.js';
@@ -10,8 +6,6 @@ import * as authApi from '../api/auth.api.js';
 const MODAL_ID = 'modalEntraOAuth';
 const MODAL_BUTTONS = ['btnOauthTest', 'btnOauthSave'];
 const TOKEN_PATH_RE = /^\/([^/]+)\/oauth2\/(?:v2\.0\/)?token\/?$/i;
-
-/* ───────────── helpers ───────────── */
 
 const $ = id => document.getElementById(id);
 const setText = (id, text) => { const el = $(id); if (el) el.innerText = text; };
@@ -30,11 +24,8 @@ async function withBusy(ids, fn) {
     try { await fn(); } finally { set(false); }
 }
 
-/* ───────────── load + render ───────────── */
+let loadSeq = 0;
 
-let loadSeq = 0;   // bỏ kết quả của lần gọi cũ nếu có lần gọi mới hơn (tránh ghi đè state bằng dữ liệu cũ)
-
-/** Nạp danh sách + connection active từ backend rồi render. Gọi khi khởi động và mỗi lần vào tab Connection. */
 export async function loadConnections() {
     const seq = ++loadSeq;
     try {
@@ -49,7 +40,6 @@ export async function loadConnections() {
     renderConnectionsGrid();
 }
 
-/** Render thuần từ store (không gọi mạng). */
 export function renderConnectionsGrid() {
     const container = $('connectionsGridContainer');
     if (!container) return;
@@ -80,7 +70,6 @@ function renderActiveCard(active) {
     const endpointEl = $('cardTokenEndpoint');
     if (endpointEl) endpointEl.title = endpoint;
 
-    // Badge môi trường chỉ hiện khi backend có trả `environment`; badge phiên chỉ hiện khi có connection active.
     const envBadge = $('displayActiveEnvBadge');
     if (envBadge) {
         envBadge.innerText = active?.environment ?? '';
@@ -112,12 +101,9 @@ function buildConnectionCard(conn) {
                 : '<button type="button" data-action="activate" class="px-2.5 py-1 bg-white border border-slate-200 hover:border-indigo-400 text-slate-600 text-[11px] font-semibold rounded-lg">Set Active</button>'}
         </div>`;
 
-    // addEventListener thay vì onclick="..." để không phải nhúng id từ server vào chuỗi HTML.
     card.querySelector('[data-action="activate"]')?.addEventListener('click', () => setActiveConnection(conn.id));
     return card;
 }
-
-/* ───────────── activate ───────────── */
 
 export async function setActiveConnection(connId) {
     try {
@@ -130,9 +116,6 @@ export async function setActiveConnection(connId) {
     showToast(name ? `Switched active connection to "${escapeHtml(name)}"` : 'Active connection switched', 'success');
 }
 
-/* ───────────── modal: add / edit ───────────── */
-
-/** isEdit = false: tạo mới; true: sửa connection đang active. */
 export async function openEntraOAuthModal(isEdit = false) {
     const modal = $(MODAL_ID);
     if (!modal) return;
@@ -155,7 +138,6 @@ export async function openEntraOAuthModal(isEdit = false) {
     $('oauthEndpoint').value = tokenEndpointOf(conn);
     $('oauthClientId').value = conn?.clientId ?? '';
 
-    // Backend không trả secret: để trống khi sửa nghĩa là "giữ nguyên secret đã lưu".
     const secret = $('oauthClientSecret');
     secret.value = '';
     secret.placeholder = isEdit ? 'Leave blank to keep the current secret' : '';
@@ -172,11 +154,6 @@ export function updateOauthSummaryPanel() {
 
 export function handleWsIdInput() {}
 
-/**
- * Đọc + kiểm tra form. Trả về payload, hoặc null (đã hiện toast cảnh báo) nếu dữ liệu chưa hợp lệ.
- * Gửi cả `tenantId` (tách từ endpoint) lẫn `tokenEndpoint` để tương thích với DTO của backend;
- * bỏ field thừa sau khi đã chốt contract. `clientSecret` bị bỏ khỏi payload khi để trống.
- */
 function collectOauthForm() {
     const { isEdit } = store.connectionEditingState;
     const v = id => $(id)?.value?.trim() ?? '';
@@ -198,7 +175,7 @@ function collectOauthForm() {
     }
 
     let tenantId = null;
-    try { tenantId = new URL(endpoint).pathname.match(TOKEN_PATH_RE)?.[1] ?? null; } catch { /* URL không hợp lệ */ }
+    try { tenantId = new URL(endpoint).pathname.match(TOKEN_PATH_RE)?.[1] ?? null; } catch {  }
     if (!tenantId) {
         showToast('Token endpoint must look like https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token', 'warning');
         return null;
@@ -217,7 +194,6 @@ export async function executeOauthConnectionTest() {
     await withBusy(MODAL_BUTTONS, async () => {
         try {
             if (isEdit && !payload.clientSecret) {
-                // Không có secret mới -> chỉ có thể kiểm tra bản đã lưu trên backend.
                 await connectionsApi.testSaved(connId);
                 showToast('Saved credentials verified. Re-enter the client secret to test your edits.', 'success');
             } else {
@@ -244,7 +220,6 @@ export async function saveOauthConnectionModal() {
         closeModal(MODAL_ID);
         await loadConnections();
 
-        // Chưa có connection nào active (vd. vừa tạo cái đầu tiên) -> kích hoạt luôn, nếu không các trang khác không có workspace để dùng.
         if (!isEdit && !store.connections.activeConnection && saved?.id) {
             try {
                 await connectionsApi.activate(saved.id);
@@ -254,8 +229,6 @@ export async function saveOauthConnectionModal() {
         showToast('Connection saved successfully', 'success');
     });
 }
-
-/* ───────────── test / sign-out ───────────── */
 
 export async function testSavedConnection() {
     const conn = store.connections.activeConnection;

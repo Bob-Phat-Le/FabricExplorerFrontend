@@ -1,4 +1,3 @@
-// Mock cho từng endpoint, dùng khi API_CONFIG.useMock = true. Xoá thư mục mocks/ khi backend đã đủ.
 import { ApiError, sleep } from '../api/client.js';
 import * as seeds from './seeds.js';
 
@@ -30,7 +29,6 @@ export const mocks = {
             return ok();
         },
     },
-    // Dữ liệu mẫu có cùng hình dạng với response thật của backend (sau khi api layer bóc `data`).
     discovery: {
         workspaces: () => seeds.workspaces,
         lakehouses: () => seeds.lakehouses,
@@ -72,7 +70,7 @@ export const mocks = {
     items: {
         list: () => seeds.items,
         create: async req => {
-            await sleep(1400);   // giả lập thời gian provision như bản cũ (1.8s tổng)
+            await sleep(1400);
             return {
                 id: `${Math.random().toString(36).substring(2, 10)}-abcd-4c02-8ccd-6faef5ba1bd7`,
                 name: req.body.displayName, type: req.body.type, workspace: 'Production Analytics',

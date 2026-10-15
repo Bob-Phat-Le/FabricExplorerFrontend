@@ -1,4 +1,3 @@
-// Trang Job Instances: chọn item, bảng job, drawer chi tiết, phân trang.
 import { fabricItems, jobInstancesData, replaceContents } from '../state/store.js';
 import * as store from '../state/store.js';
 import { showApiError, showToast } from '../core/ui.js';
@@ -176,16 +175,14 @@ export async function loadNextJobsPage() {
 }
 
 let itemsLoaded = false;
-let nextJobsToken = null;   // continuation token của trang job kế tiếp
+let nextJobsToken = null;
 
-/** Nạp danh sách Fabric item (cache sau lần đầu; truyền force để nạp lại). */
 export async function loadItems({ force = false } = {}) {
     if (itemsLoaded && !force) return;
     store.replaceContents(store.fabricItems, await itemsApi.list());
     itemsLoaded = true;
 }
 
-/** Nạp trang job đầu tiên của item đang theo dõi (thay thế nội dung cũ). */
 async function loadJobs() {
     try {
         const page = await itemsApi.listJobs(activeMonitoredItem.id, {});

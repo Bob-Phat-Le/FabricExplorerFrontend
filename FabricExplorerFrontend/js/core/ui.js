@@ -1,5 +1,3 @@
-// UI helpers dùng chung: toast, modal, drawer, sidebar, clipboard.
-
 export function toggleSidebarCollapse() {
     const sidebar = document.getElementById('sidebar');
     const texts = document.querySelectorAll('.sidebar-text');
@@ -30,7 +28,6 @@ export function closeDrawer(id) {
     document.getElementById(id)?.classList.add('hidden');
 }
 
-/** Escape chuỗi trước khi chèn vào innerHTML (tên connection, message lỗi từ server...). */
 export function escapeHtml(value) {
     return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 }
@@ -79,8 +76,8 @@ export function copyToClipboard(text, successMsg = 'Copied to clipboard') {
     showToast(successMsg, 'success');
 }
 
-/** Hiển thị lỗi từ tầng API (ApiError.message đã được chuẩn hoá trong api/client.js). */
 export function showApiError(err, fallback = 'Request failed') {
+    if (err?.traceId) console.error(`[${err.code ?? 'error'}] traceId=${err.traceId}`);
     console.error(err);
     showToast(escapeHtml(err?.message || fallback), 'error');
 }
