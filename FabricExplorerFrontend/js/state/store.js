@@ -2,6 +2,17 @@ export const connections = {
     allConnections: [],
     activeConnection: null
 };
+
+export const CONN_PAGE_SIZE_DEFAULT = 20;
+export const CONN_PAGE_SIZE_MAX = 40;
+
+export const connectionsPaging = {
+    page: 1,
+    pageSize: CONN_PAGE_SIZE_DEFAULT,
+    total: 0,        // TotalItems từ backend
+    totalPages: 1    // TotalPages từ backend
+};
+
 export const fabricItems = [];
 export const jobInstancesData = [];
 
