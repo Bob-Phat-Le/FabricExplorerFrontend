@@ -24,15 +24,45 @@ async function withBusy(ids, fn) {
     try { await fn(); } finally { set(false); }
 }
 
+const clampPageSize = raw => {
+    const n = parseInt(raw, 10);
+    if (!Number.isFinite(n) || n < 1) return store.CONN_PAGE_SIZE_DEFAULT;
+    return Math.min(n, store.CONN_PAGE_SIZE_MAX);
+};
+
+const totalPages = () => Math.max(1, store.connectionsPaging.totalPages);
+
+function pageWindow(current, total, size = 5) {
+    let start = Math.max(1, current - Math.floor(size / 2));
+    let end = Math.min(total, start + size - 1);
+    start = Math.max(1, end - size + 1);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+}
+
 let loadSeq = 0;
 
 export async function loadConnections() {
     const seq = ++loadSeq;
+    const paging = store.connectionsPaging;
     try {
-        const [list, active] = await Promise.all([connectionsApi.list(), connectionsApi.getActive()]);
+        const [res, active] = await Promise.all([
+            connectionsApi.listPage({ page: paging.page, pageSize: paging.pageSize }),
+            connectionsApi.getActive()
+        ]);
         if (seq !== loadSeq) return;
-        store.connections.allConnections = list;
-        store.connections.activeConnection = active ?? list.find(c => c.isActive) ?? null;
+
+        paging.page = res.page;
+        paging.pageSize = res.pageSize;
+        paging.total = res.totalItems;
+        paging.totalPages = res.totalPages;
+
+        if (!res.items.length && res.totalItems > 0 && paging.page > res.totalPages) {
+            paging.page = res.totalPages;
+            return loadConnections();
+        }
+
+        store.connections.allConnections = res.items;
+        store.connections.activeConnection = active ?? res.items.find(c => c.isActive) ?? null;
     } catch (err) {
         if (seq !== loadSeq) return;
         showApiError(err, 'Could not load connections');
@@ -41,11 +71,17 @@ export async function loadConnections() {
 }
 
 export function renderConnectionsGrid() {
+    const sizeInput = $('connPageSize');
+    if (sizeInput && document.activeElement !== sizeInput) {
+        sizeInput.value = store.connectionsPaging.pageSize;
+    }
+
     const container = $('connectionsGridContainer');
     if (!container) return;
 
     const { allConnections: list } = store.connections;
-    setText('connCountLabel', `${list.length} Saved Profile${list.length === 1 ? '' : 's'}`);
+    const { total } = store.connectionsPaging;
+    setText('connCountLabel', `${total} Saved Profile${total === 1 ? '' : 's'}`);
     renderActiveCard(store.connections.activeConnection);
 
     container.replaceChildren();
@@ -54,9 +90,10 @@ export function renderConnectionsGrid() {
             <div class="md:col-span-2 text-xs text-slate-400 border border-dashed border-slate-300 rounded-xl p-6 text-center">
                 No saved connections yet. Click <b>Add Connection</b> to create one.
             </div>`;
-        return;
+    } else {
+        list.forEach(conn => container.appendChild(buildConnectionCard(conn)));
     }
-    list.forEach(conn => container.appendChild(buildConnectionCard(conn)));
+    renderPagination();
 }
 
 function renderActiveCard(active) {
@@ -244,4 +281,72 @@ export async function disconnectEntraID() {
         await authApi.logout();
         showToast('Signed out of Entra ID session', 'warning');
     } catch (err) { showApiError(err, 'Sign out failed'); }
+}
+
+function renderPagination() {
+    const wrap = $('connPagination');
+    const buttons = $('connPageButtons');
+    if (!wrap || !buttons) return;
+
+    const { page, pageSize, total } = store.connectionsPaging;
+    const pages = totalPages();
+    const count = store.connections.allConnections.length;
+
+    wrap.classList.toggle('hidden', total === 0);
+    const from = count ? (page - 1) * pageSize + 1 : 0;
+    const to = count ? from + count - 1 : 0;
+    setText('connPageInfo', `Showing ${from}–${to} of ${total} · Page ${page} / ${pages}`);
+
+    const base = 'min-w-[28px] h-7 px-2 text-xs font-semibold rounded-lg border transition-colors';
+    const mk = (label, target, { disabled = false, current = false, title = '' } = {}) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.innerHTML = label;
+        b.title = title;
+        b.disabled = disabled;
+        b.className = `${base} ${current
+            ? 'bg-indigo-600 border-indigo-600 text-white'
+            : 'bg-white border-slate-200 text-slate-600 hover:border-indigo-400'} ${disabled ? 'opacity-40 cursor-not-allowed' : ''}`;
+        if (!disabled && !current) b.addEventListener('click', () => goToConnectionPage(target));
+        return b;
+    };
+    const icon = name => `<i class="fa-solid ${name} text-[10px]"></i>`;
+
+    buttons.replaceChildren(
+        mk(icon('fa-angles-left'), 1, { disabled: page <= 1, title: 'First page' }),
+        mk(icon('fa-chevron-left'), page - 1, { disabled: page <= 1, title: 'Previous page' }),
+        ...pageWindow(page, pages).map(p => mk(String(p), p, { current: p === page, title: `Page ${p}` })),
+        mk(icon('fa-chevron-right'), page + 1, { disabled: page >= pages, title: 'Next page' }),
+        mk(icon('fa-angles-right'), pages, { disabled: page >= pages, title: 'Last page' })
+    );
+}
+
+export async function goToConnectionPage(page) {
+    const target = Math.min(Math.max(1, page), totalPages());
+    if (target === store.connectionsPaging.page) return;
+    store.connectionsPaging.page = target;
+    await loadConnections();
+}
+
+export async function refreshConnections() {
+    const input = $('connPageSize');
+    const paging = store.connectionsPaging;
+
+    const raw = input?.value;
+    const size = clampPageSize(raw);
+    if (input) input.value = size;
+    if (String(size) !== String(raw).trim()) {
+        showToast(`Page size must be between 1 and ${store.CONN_PAGE_SIZE_MAX}`, 'warning');
+    }
+
+    if (size !== paging.pageSize) {
+        paging.pageSize = size;
+        paging.page = 1;
+    }
+
+    await withBusy(['btnConnRefresh'], async () => {
+        $('connRefreshIcon')?.classList.add('fa-spin');
+        try { await loadConnections(); }
+        finally { $('connRefreshIcon')?.classList.remove('fa-spin'); }
+    });
 }

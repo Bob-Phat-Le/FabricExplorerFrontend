@@ -95,17 +95,36 @@
 
     <!-- SAVED CONNECTIONS GRID SECTION -->
     <div class="space-y-4">
-        <div class="flex items-center justify-between">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
                 <h3 class="text-sm font-bold text-slate-900 tracking-tight">Saved Connections</h3>
                 <p class="text-xs text-slate-500">Select any connection below to switch the active working environment.</p>
             </div>
-            <span class="text-xs font-mono text-slate-400" id="connCountLabel">2 Saved Profiles</span>
+
+            <div class="flex items-center space-x-3">
+                <span class="text-xs font-mono text-slate-400" id="connCountLabel">0 Saved Profiles</span>
+
+                <div class="flex items-center space-x-2">
+                    <label for="connPageSize" class="text-xs text-slate-500 whitespace-nowrap">Page size</label>
+                    <input id="connPageSize" type="number" min="1" max="40" value="20"
+                        onkeydown="if(event.key==='Enter') refreshConnections()"
+                        class="w-16 px-2 py-1.5 text-xs border border-slate-300 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400">
+                    <button type="button" id="btnConnRefresh" onclick="refreshConnections()" title="Refresh"
+                            class="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-lg transition-colors flex items-center space-x-1.5">
+                        <i class="fa-solid fa-rotate-right text-slate-400" id="connRefreshIcon"></i>
+                        <span>Refresh</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Connections Grid Container -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="connectionsGridContainer">
-            <!-- Dynamic Connection Cards Rendered via JS -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="connectionsGridContainer"></div>
+
+        <!-- Pagination -->
+        <div id="connPagination" class="flex flex-col sm:flex-row items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <span class="text-[11px] text-slate-400" id="connPageInfo"></span>
+            <div class="flex items-center space-x-1" id="connPageButtons"></div>
         </div>
     </div>
 </section>
