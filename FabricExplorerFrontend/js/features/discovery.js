@@ -57,7 +57,7 @@ async function withBusy(ids, fn) {
 
 function context() {
     const conn = store.connections.activeConnection;
-    return conn ? { connectionId: conn.id } : null;
+    return conn ? { connectionId: conn.id, workspaceId: conn.workspaceId } : null;
 }
 
 function requireContext() {
@@ -95,8 +95,8 @@ const ICON_OFF = 'w-10 h-10 rounded-lg bg-slate-100 text-slate-700 group-hover:b
 
 let currentResource = 'lakehouse';
 const loadedFor = {};
-const workspaceCache = {};
-const WORKSPACE_FETCH_CONCURRENCY = 4;
+// const workspaceCache = {};
+// const WORKSPACE_FETCH_CONCURRENCY = 4;
 const listSeq = {};
 const lists = {};
 const listCtrl = {};
@@ -143,81 +143,155 @@ function setPlaceholder(resType, text) {
     select.disabled = true;
 }
 
+// async function ensureLoaded(resType, { force = false } = {}) {
+//     const cfg = RESOURCES[resType];
+//     const ctx = context();
+//     if (!ctx) {
+//         loadedFor[resType] = null;
+//         clearResults(resType);
+//         setPlaceholder(resType, 'No active connection — set one in the Connection tab');
+//         return;
+//     }
+
+//     const key = ctx.connectionId;
+//     if (!force && loadedFor[resType] === key) return;
+//     if (force) delete workspaceCache[key];
+
+//     listCtrl[resType]?.abort();
+//     const ctrl = (listCtrl[resType] = new AbortController());
+//     const seq = (listSeq[resType] = (listSeq[resType] || 0) + 1);
+//     clearResults(resType);
+//     setPlaceholder(resType, 'Loading…');
+//     try {
+//         const { items, skipped } = await cfg.fetch({
+//             ...ctx,
+//             refresh: force,
+//             signal: ctrl.signal
+//         });
+//         if (seq !== listSeq[resType]) return;
+//         lists[resType] = items;
+//         loadedFor[resType] = key;
+
+//         const select = $(cfg.selectId);
+//         if (skipped) showToast(`${skipped} workspace${skipped === 1 ? '' : 's'} could not be read and ${skipped === 1 ? 'was' : 'were'} skipped.`, 'warning');
+//         if (!items.length) {
+//             setPlaceholder(resType, `No ${cfg.noun}s found in your workspaces`);
+//             return;
+//         }
+//         select.replaceChildren(...items.map(item =>
+//             new Option(`${cfg.nameOf(item)} (${item.workspaceName ?? 'Workspace'})`, cfg.idOf(item))));
+//         select.disabled = false;
+//     } catch (err) {
+//         if (seq !== listSeq[resType]) return;
+//         loadedFor[resType] = null;
+//         setPlaceholder(resType, `Could not load ${cfg.noun}s — click Reload`);
+//         showApiError(err, `Could not load ${cfg.noun}s`);
+//     }
+// }
+
 async function ensureLoaded(resType, { force = false } = {}) {
     const cfg = RESOURCES[resType];
     const ctx = context();
+
     if (!ctx) {
         loadedFor[resType] = null;
         clearResults(resType);
-        setPlaceholder(resType, 'No active connection — set one in the Connection tab');
+        setPlaceholder(
+            resType,
+            'No active connection — set one in the Connection tab'
+        );
         return;
     }
 
     const key = ctx.connectionId;
+
     if (!force && loadedFor[resType] === key) return;
-    if (force) delete workspaceCache[key];
 
     listCtrl[resType]?.abort();
+
     const ctrl = (listCtrl[resType] = new AbortController());
     const seq = (listSeq[resType] = (listSeq[resType] || 0) + 1);
+
     clearResults(resType);
     setPlaceholder(resType, 'Loading…');
+
     try {
-        const { items, skipped } = await fetchFromAllWorkspaces(cfg, ctx, { refresh: force, signal: ctrl.signal });
+        const items = (await cfg.fetch({
+            ...ctx,
+            refresh: force,
+            signal: ctrl.signal
+        })) ?? [];
+
         if (seq !== listSeq[resType]) return;
+
         lists[resType] = items;
         loadedFor[resType] = key;
 
         const select = $(cfg.selectId);
-        if (skipped) showToast(`${skipped} workspace${skipped === 1 ? '' : 's'} could not be read and ${skipped === 1 ? 'was' : 'were'} skipped.`, 'warning');
+
         if (!items.length) {
-            setPlaceholder(resType, `No ${cfg.noun}s found in your workspaces`);
+            setPlaceholder(
+                resType,
+                `No ${cfg.noun}s found in workspace`
+            );
             return;
         }
-        select.replaceChildren(...items.map(item =>
-            new Option(`${cfg.nameOf(item)} (${item.workspaceName ?? 'Workspace'})`, cfg.idOf(item))));
+
+        select.replaceChildren(
+            ...items.map(item =>
+                new Option(
+                    `${cfg.nameOf(item)} (${item.workspaceName ?? 'Workspace'})`,
+                    cfg.idOf(item)
+                )
+            )
+        );
+
         select.disabled = false;
+
     } catch (err) {
         if (seq !== listSeq[resType]) return;
         loadedFor[resType] = null;
-        setPlaceholder(resType, `Could not load ${cfg.noun}s — click Reload`);
+        setPlaceholder(
+            resType,
+            `Could not load ${cfg.noun}s — click Reload`
+        );
         showApiError(err, `Could not load ${cfg.noun}s`);
     }
 }
 
-function getWorkspaces(ctx, refresh = false) {
-    workspaceCache[ctx.connectionId] ||= discoveryApi.listWorkspaces({ ...ctx, refresh }).then(list => list ?? []);
-    return workspaceCache[ctx.connectionId].catch(err => { delete workspaceCache[ctx.connectionId]; throw err; });
-}
+// function getWorkspaces(ctx, refresh = false) {
+//     workspaceCache[ctx.connectionId] ||= discoveryApi.listWorkspaces({ ...ctx, refresh }).then(list => list ?? []);
+//     return workspaceCache[ctx.connectionId].catch(err => { delete workspaceCache[ctx.connectionId]; throw err; });
+// }
 
-async function fetchFromAllWorkspaces(cfg, ctx, { refresh = false, signal } = {}) {
-    const workspaces = await getWorkspaces(ctx, refresh);
-    const results = new Array(workspaces.length);
-    let next = 0;
+// async function fetchFromAllWorkspaces(cfg, ctx, { refresh = false, signal } = {}) {
+//     const workspaces = await getWorkspaces(ctx, refresh);
+//     const results = new Array(workspaces.length);
+//     let next = 0;
 
-    async function worker() {
-        while (next < workspaces.length && !signal?.aborted) {
-            const i = next++;
-            try {
-                const items = (await cfg.fetch({ ...ctx, workspaceId: workspaces[i].workspaceId, refresh, signal })) ?? [];
-                results[i] = { ok: true, items: items.map(it => ({ ...it, workspaceId: it.workspaceId ?? workspaces[i].workspaceId, workspaceName: it.workspaceName ?? workspaces[i].workspaceName })) };
-            } catch (err) {
-                console.warn(`Could not list ${cfg.noun}s in workspace ${workspaces[i].workspaceId}`, err);
-                results[i] = { ok: false, err };
-            }
-        }
-    }
-    await Promise.all(Array.from({ length: Math.min(WORKSPACE_FETCH_CONCURRENCY, workspaces.length) }, worker));
-    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+//     async function worker() {
+//         while (next < workspaces.length && !signal?.aborted) {
+//             const i = next++;
+//             try {
+//                 const items = (await cfg.fetch({ ...ctx, workspaceId: workspaces[i].workspaceId, refresh, signal })) ?? [];
+//                 results[i] = { ok: true, items: items.map(it => ({ ...it, workspaceId: it.workspaceId ?? workspaces[i].workspaceId, workspaceName: it.workspaceName ?? workspaces[i].workspaceName })) };
+//             } catch (err) {
+//                 console.warn(`Could not list ${cfg.noun}s in workspace ${workspaces[i].workspaceId}`, err);
+//                 results[i] = { ok: false, err };
+//             }
+//         }
+//     }
+//     await Promise.all(Array.from({ length: Math.min(WORKSPACE_FETCH_CONCURRENCY, workspaces.length) }, worker));
+//     if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
 
-    const failed = results.filter(r => !r.ok);
-    if (workspaces.length && failed.length === workspaces.length) throw failed[0].err;
+//     const failed = results.filter(r => !r.ok);
+//     if (workspaces.length && failed.length === workspaces.length) throw failed[0].err;
 
-    const items = results.filter(r => r.ok).flatMap(r => r.items)
-        .sort((a, b) => cfg.nameOf(a).localeCompare(cfg.nameOf(b), undefined, { sensitivity: 'base' })
-            || String(a.workspaceName).localeCompare(String(b.workspaceName)));
-    return { items, skipped: failed.length };
-}
+//     const items = results.filter(r => r.ok).flatMap(r => r.items)
+//         .sort((a, b) => cfg.nameOf(a).localeCompare(cfg.nameOf(b), undefined, { sensitivity: 'base' })
+//             || String(a.workspaceName).localeCompare(String(b.workspaceName)));
+//     return { items, skipped: failed.length };
+// }
 
 function selectedItem(resType) {
     const cfg = RESOURCES[resType];

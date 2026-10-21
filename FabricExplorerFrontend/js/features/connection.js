@@ -197,7 +197,7 @@ export async function executeOauthConnectionTest() {
                 await connectionsApi.testSaved(connId);
                 showToast('Saved credentials verified. Re-enter the client secret to test your edits.', 'success');
             } else {
-                await connectionsApi.test(payload);
+                await connectionsApi.test({...payload, isProtected: false});
                 showToast('OAuth 2.0 & Workspace access verified', 'success');
             }
         } catch (err) { showApiError(err, 'Connection test failed'); }
