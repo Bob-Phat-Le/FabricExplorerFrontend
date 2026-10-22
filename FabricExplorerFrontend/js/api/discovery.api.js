@@ -1,7 +1,15 @@
 import { call, ApiError } from './client.js';
 import { mocks } from '../mocks/handlers.js';
+import { asStreamed, openStream as openLiveStream } from './stream.js';
 
 const unwrap = r => (r && typeof r === 'object' && 'statusCode' in r && 'data' in r ? r.data : r);
+
+// Endpoint có thể stream: data là EventStreamingAdapter<T> -> { data, streamId, pendingFields, isStreaming }
+const streamed = r => asStreamed(unwrap(r));
+
+/** Nhận các sự kiện live của một kết quả `streamed`. Xem api/stream.js. */
+export const openStream = (live, handlers, { signal } = {}) =>
+    openLiveStream(live, handlers, { signal, mockPlayer: mocks.stream.play });
 
 const opts = ({ connectionId, refresh = false, signal }) => ({
     headers: { 'X-Connection-Id': connectionId, ...(refresh ? { 'Cache-Control': 'no-cache' } : {}) },
@@ -33,18 +41,19 @@ export const listLakehouseTables = ({ workspaceId, lakehouseId, pageSize = 50, c
         query: { pageSize, continuationToken },
         ...opts(rest),
     }, mocks.discovery.tables)
-        .then(unwrap)
-        .then(page => ({
-            items: page?.items ?? [],
-            nextToken: page?.pageInformation?.nextToken ?? null,
-            totalItems: page?.pageInformation?.totalItems ?? null,
+        .then(streamed)
+        .then(live => ({
+            items: live.data?.items ?? [],
+            nextToken: live.data?.pageInformation?.nextToken ?? null,
+            totalItems: live.data?.pageInformation?.totalItems ?? null,
+            live, // stream các bảng còn "Checking" (sự kiện table-stats)
         }));
 
 export const listWarehouses = ctx =>
     call({ method: 'GET', path: warehouses(ctx.workspaceId), ...opts(ctx) }, mocks.discovery.warehouses).then(unwrap);
 
 export const getWarehouse = ctx =>
-    call({ method: 'GET', path: `${warehouses(ctx.workspaceId)}/${ctx.warehouseId}`, ...opts(ctx) }, mocks.discovery.warehouse).then(unwrap);
+    call({ method: 'GET', path: `${warehouses(ctx.workspaceId)}/${ctx.warehouseId}`, ...opts(ctx) }, mocks.discovery.warehouse).then(streamed);
 
 export const getWarehouseConnectionString = ctx =>
     call({ method: 'GET', path: `${warehouses(ctx.workspaceId)}/${ctx.warehouseId}/connection-string`, ...opts(ctx) }, mocks.discovery.connString).then(unwrap);
@@ -53,10 +62,10 @@ export const listMirroredDatabases = ctx =>
     call({ method: 'GET', path: mirroredDatabases(ctx.workspaceId), ...opts(ctx) }, mocks.discovery.mirroredDbs).then(unwrap);
 
 export const getMirroredDb = ctx =>
-    call({ method: 'GET', path: mdb(ctx), ...opts(ctx) }, mocks.discovery.mirroredDb).then(unwrap);
+    call({ method: 'GET', path: mdb(ctx), ...opts(ctx) }, mocks.discovery.mirroredDb).then(streamed);
 
 export const getMirroringStatus = ctx =>
-    call({ method: 'GET', path: `${mdb(ctx)}/status`, ...opts(ctx) }, mocks.discovery.mirroringStatus).then(unwrap);
+    call({ method: 'GET', path: `${mdb(ctx)}/status`, ...opts(ctx) }, mocks.discovery.mirroringStatus).then(streamed);
 
 export const startMirroring = ctx =>
     call({ method: 'POST', path: `${mdb(ctx)}/start`, ...opts({ connectionId: ctx.connectionId }) }, mocks.discovery.mirroringAction).then(unwrap);

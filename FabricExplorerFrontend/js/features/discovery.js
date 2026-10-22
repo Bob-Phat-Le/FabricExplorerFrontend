@@ -3,6 +3,7 @@ import { copyToClipboard, escapeHtml, showApiError, showToast } from '../core/ui
 import { formatDateTime, formatNumber, formatSeconds, timeAgo } from '../core/format.js';
 import { sleep } from '../api/client.js';
 import * as discoveryApi from '../api/discovery.api.js';
+import { CHECKING } from '../api/stream.js';
 
 const $ = id => document.getElementById(id);
 const setText = (id, text) => { const el = $(id); if (el) el.innerText = text; };
@@ -23,8 +24,13 @@ const TONES = {
 
 function badge(label, tone = 'muted', title = '') {
     const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
-    return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border ${TONES[tone]}"${titleAttr}>● ${escapeHtml(label)}</span>`;
+    // "Checking" = giá trị tạm của backend khi kết quả thật đang đến qua stream
+    const checking = label === CHECKING;
+    const icon = checking ? '<i class="fa-solid fa-circle-notch fa-spin mr-1 text-[10px]"></i>' : '● ';
+    return `<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium border ${TONES[checking ? 'info' : tone]}"${titleAttr}>${icon}${escapeHtml(label)}</span>`;
 }
+
+const skeleton = (width = 'w-12') => `<span class="inline-block h-3 ${width} rounded bg-slate-200 animate-pulse align-middle" title="Loading…"></span>`;
 
 const TABLE_STATUS_TONE = { Healthy: 'ok', Empty: 'muted', Stale: 'warn', Error: 'bad', Unknown: 'muted' };
 const ONLINE_STATUS_TONE = { Online: 'ok', Offline: 'bad', Unknown: 'muted' };
@@ -32,9 +38,46 @@ const DB_STATUS_TONE = { Active: 'ok', Offline: 'bad', Unknown: 'muted' };
 const MIRRORING_STATUS_TONE = { Running: 'ok', Starting: 'info', Initializing: 'info', Stopping: 'warn', Stopped: 'muted', Paused: 'muted', Initialized: 'muted', Unknown: 'muted' };
 const TABLE_MIRRORING_TONE = { Replicating: 'ok', Snapshotting: 'info', Reseeding: 'info', Initialized: 'info', Stopped: 'muted', Failed: 'bad', Unknown: 'muted' };
 
+// Các stream SSE đang chạy, theo key. Key 'abc#n' thuộc nhóm 'abc' (stopStreams('abc') dừng cả nhóm).
+const streamCtrls = new Map();
+
+function stopStreams(group) {
+    for (const [key, ctrl] of streamCtrls) {
+        if (key === group || key.startsWith(`${group}#`)) {
+            ctrl.abort();
+            streamCtrls.delete(key);
+        }
+    }
+}
+
+/**
+ * Nhận sự kiện live của `live` (kết quả discoveryApi có isStreaming) và gọi handlers[tênSựKiện](payload).
+ * `onSettled` chạy khi stream kết thúc hoặc lỗi (không chạy khi bị hủy) để chốt lại các trường còn "Checking",
+ * tránh UI kẹt ở trạng thái đang kiểm tra.
+ */
+function followStream(key, live, handlers, onSettled) {
+    streamCtrls.get(key)?.abort();
+    streamCtrls.delete(key);
+    if (!live?.isStreaming) return;
+
+    const ctrl = new AbortController();
+    streamCtrls.set(key, ctrl);
+
+    discoveryApi.openStream(live, handlers, { signal: ctrl.signal })
+        .then(() => { if (!ctrl.signal.aborted) onSettled?.(); })
+        .catch(err => {
+            if (ctrl.signal.aborted) return;
+            console.warn('Live update failed', err);
+            showToast(`Live update failed: ${escapeHtml(err?.message || 'unknown error')}`, 'warning');
+            onSettled?.(err);
+        })
+        .finally(() => { if (streamCtrls.get(key) === ctrl) streamCtrls.delete(key); });
+}
+
 const seqs = {};
 const ctrls = {};
 function latest(key) {
+    stopStreams(key);
     ctrls[key]?.abort();
     const ctrl = (ctrls[key] = new AbortController());
     const n = (seqs[key] = (seqs[key] || 0) + 1);
@@ -42,7 +85,7 @@ function latest(key) {
     isCurrent.signal = ctrl.signal;
     return isCurrent;
 }
-const invalidate = (...keys) => keys.forEach(k => { seqs[k] = (seqs[k] || 0) + 1; ctrls[k]?.abort(); });
+const invalidate = (...keys) => keys.forEach(k => { seqs[k] = (seqs[k] || 0) + 1; ctrls[k]?.abort(); stopStreams(k); });
 
 async function withBusy(ids, fn) {
     const buttons = [].concat(ids).map($).filter(Boolean);
@@ -133,7 +176,7 @@ function clearResults(resType) {
     invalidate(...cfg.seqKeys);
     cfg.resultCards.forEach(hide);
     if (resType === 'warehouse') resetConnString();
-    if (resType === 'lakehouse') { lakeTables = []; lakeNextToken = null; lakeSelection = null; }
+    if (resType === 'lakehouse') { stopStreams('tablesLive'); lakeTables = []; lakeNextToken = null; lakeSelection = null; }
 }
 
 function setPlaceholder(resType, text) {
@@ -323,6 +366,7 @@ async function loadTables({ append, refresh = false }) {
     }
 
     const isCurrent = latest('tables');
+    if (!append) stopStreams('tablesLive'); // danh sách mới: bỏ các stream của danh sách cũ (Load more thì giữ lại)
     await withBusy(append ? 'btnLakeLoadMore' : ['btnListTables', 'btnRefreshTables'], async () => {
         try {
             const page = await discoveryApi.listLakehouseTables({
@@ -335,6 +379,7 @@ async function loadTables({ append, refresh = false }) {
             lakeNextToken = page.nextToken;
             show('lakehouseGridContainer');
             renderLakehouseGrid();
+            trackTableStats(page.live, page.items);
             if (!append) showToast(`Retrieved ${lakeTables.length}${lakeNextToken ? '+' : ''} table${lakeTables.length === 1 ? '' : 's'} for Lakehouse`, 'info');
         } catch (err) {
             if (isCurrent()) showApiError(err, 'Could not list tables');
@@ -343,6 +388,40 @@ async function loadTables({ append, refresh = false }) {
 }
 
 export function filterLakehouseGrid() { renderLakehouseGrid(); }
+
+let tableStreamSeq = 0;
+let gridRenderQueued = false;
+
+// Nhiều bảng có thể xong gần như cùng lúc: gom lại thành một lần vẽ mỗi frame
+function scheduleGridRender() {
+    if (gridRenderQueued) return;
+    gridRenderQueued = true;
+    requestAnimationFrame(() => { gridRenderQueued = false; renderLakehouseGrid(); });
+}
+
+// Mỗi trang bảng có stream riêng; chỉ cập nhật/chốt các dòng thuộc trang đó
+function trackTableStats(live, pageItems) {
+    if (!live?.isStreaming) return;
+    const byName = new Map(pageItems.map(t => [t.name, t]));
+
+    followStream(`tablesLive#${++tableStreamSeq}`, live, {
+        'table-stats': patch => {
+            const row = byName.get(patch.name);
+            if (!row) return;
+            Object.assign(row, patch);
+            scheduleGridRender();
+        },
+    }, () => {
+        let changed = false;
+        for (const row of pageItems) {
+            if (row.status !== CHECKING) continue;
+            row.status = 'Unknown';
+            row.statusMessage = 'Statistics are unavailable.';
+            changed = true;
+        }
+        if (changed) scheduleGridRender();
+    });
+}
 
 export function inspectTable(tableName) {
     showToast(`Inspecting table ${escapeHtml(tableName)}`, 'info');
@@ -362,8 +441,8 @@ function renderLakehouseGrid() {
             <tr class="hover:bg-slate-50 lake-row">
                 <td class="p-3 pl-4 font-bold text-slate-900">${escapeHtml(t.name)}</td>
                 <td class="p-3 font-mono">${escapeHtml(t.format || t.type || EMPTY)}${t.format && t.type ? ` <span class="text-slate-400">${escapeHtml(t.type)}</span>` : ''}</td>
-                <td class="p-3 font-mono">${formatNumber(t.rowCount)}</td>
-                <td class="p-3 text-slate-500" title="${escapeHtml(formatDateTime(t.lastModifiedTime))}">${timeAgo(t.lastModifiedTime)}</td>
+                <td class="p-3 font-mono">${t.status === CHECKING ? skeleton('w-12') : formatNumber(t.rowCount)}</td>
+                <td class="p-3 text-slate-500" title="${t.status === CHECKING ? '' : escapeHtml(formatDateTime(t.lastModifiedTime))}">${t.status === CHECKING ? skeleton('w-16') : timeAgo(t.lastModifiedTime)}</td>
                 <td class="p-3">${badge(t.status || 'Unknown', TABLE_STATUS_TONE[t.status] ?? 'muted', t.statusMessage ?? '')}</td>
                 <td class="p-3 text-right pr-4"><button type="button" data-table="${escapeHtml(t.name)}" class="text-indigo-600 font-semibold hover:underline">View</button></td>
             </tr>`).join('');
@@ -386,26 +465,41 @@ export async function executeGetWarehouse() {
     const isCurrent = latest('warehouse');
     await withBusy('btnGetWarehouse', async () => {
         try {
-            const wh = await discoveryApi.getWarehouse({ ...target, signal: isCurrent.signal });
+            const live = await discoveryApi.getWarehouse({ ...target, signal: isCurrent.signal });
             if (!isCurrent()) return;
 
-            setText('whName', wh.name ?? EMPTY);
-            setHtml('whStatus', badge(wh.onlineStatus ?? 'Unknown', ONLINE_STATUS_TONE[wh.onlineStatus] ?? 'muted', wh.onlineStatusMessage ?? ''));
-            setText('whWorkspace', wh.workspace?.name ?? EMPTY);
-            setText('whWorkspaceId', wh.workspace?.id ?? EMPTY);
-            setText('whCreated', formatDateTime(wh.createdDate));
-            setText('whUpdated', formatDateTime(wh.lastUpdatedTime));
-
-            const message = $('whStatusMessage');
-            if (message) {
-                message.innerText = wh.onlineStatusMessage ?? '';
-                message.classList.toggle('hidden', !wh.onlineStatusMessage);
-            }
+            const wh = live.data;
+            renderWarehouse(wh);
             show('warehouseDetailsCard');
+
+            // Probe SQL có thể chậm: onlineStatus = "Checking" cho tới khi sự kiện online-status đến
+            followStream('warehouse', live, {
+                'online-status': patch => { Object.assign(wh, patch); renderWarehouse(wh); },
+            }, () => {
+                if (wh.onlineStatus !== CHECKING) return;
+                wh.onlineStatus = 'Unknown';
+                wh.onlineStatusMessage = 'Could not determine the online status.';
+                renderWarehouse(wh);
+            });
         } catch (err) {
             if (isCurrent()) showApiError(err, 'Could not load warehouse');
         }
     });
+}
+
+function renderWarehouse(wh) {
+    setText('whName', wh.name ?? EMPTY);
+    setHtml('whStatus', badge(wh.onlineStatus ?? 'Unknown', ONLINE_STATUS_TONE[wh.onlineStatus] ?? 'muted', wh.onlineStatusMessage ?? ''));
+    setText('whWorkspace', wh.workspace?.name ?? EMPTY);
+    setText('whWorkspaceId', wh.workspace?.id ?? EMPTY);
+    setText('whCreated', formatDateTime(wh.createdDate));
+    setText('whUpdated', formatDateTime(wh.lastUpdatedTime));
+
+    const message = $('whStatusMessage');
+    if (message) {
+        message.innerText = wh.onlineStatusMessage ?? '';
+        message.classList.toggle('hidden', !wh.onlineStatusMessage);
+    }
 }
 
 export async function executeGetConnString() {
@@ -461,21 +555,51 @@ export async function executeGetMirroredDb() {
     const isCurrent = latest('mirroredDb');
     await withBusy('btnGetMirroredDb', async () => {
         try {
-            const db = await discoveryApi.getMirroredDb({ ...target, signal: isCurrent.signal });
+            const live = await discoveryApi.getMirroredDb({ ...target, signal: isCurrent.signal });
             if (!isCurrent()) return;
 
-            setText('mdbName', db.mirroredDatabaseName ?? EMPTY);
-            setText('mdbWorkspace', db.workspaceName ?? EMPTY);
-            setHtml('mdbStatus', badge(db.status ?? 'Unknown', DB_STATUS_TONE[db.status] ?? 'muted', `Mirroring status: ${db.mirroringStatus ?? 'Unknown'}`)
-                + `<span class="ml-1.5 text-[11px] font-normal text-slate-400">${escapeHtml(db.mirroringStatus ?? '')}</span>`);
-            setText('mdbSource', [db.sourceName, db.sourceType && db.sourceType !== db.sourceName ? `(${db.sourceType})` : '']
-                .filter(Boolean).join(' ') || EMPTY);
-            setText('mdbCreated', db.createdAt ? formatDateTime(db.createdAt) : 'Not available');
+            const db = live.data;
+            renderMirroredDb(db);
             show('mirroredDbDetailsCard');
+
+            // mirroring-status và source-info độc lập nhau: cái nào xong trước hiện trước
+            followStream('mirroredDb', live, {
+                'mirroring-status': patch => { Object.assign(db, patch); renderMirroredDb(db); },
+                'source-info': patch => { Object.assign(db, patch); renderMirroredDb(db); },
+            }, () => {
+                let changed = false;
+                if (db.status === CHECKING || db.mirroringStatus === CHECKING) {
+                    db.status = 'Unknown';
+                    db.mirroringStatus = 'Unknown';
+                    changed = true;
+                }
+                if (db.sourceName === CHECKING || db.sourceType === CHECKING) {
+                    db.sourceName = null;
+                    db.sourceType = null;
+                    changed = true;
+                }
+                if (changed) renderMirroredDb(db);
+            });
         } catch (err) {
             if (isCurrent()) showApiError(err, 'Could not load mirrored database');
         }
     });
+}
+
+function renderMirroredDb(db) {
+    const mirroringChecking = db.mirroringStatus === CHECKING;
+    setText('mdbName', db.mirroredDatabaseName ?? EMPTY);
+    setText('mdbWorkspace', db.workspaceName ?? EMPTY);
+    setHtml('mdbStatus', badge(db.status ?? 'Unknown', DB_STATUS_TONE[db.status] ?? 'muted', `Mirroring status: ${db.mirroringStatus ?? 'Unknown'}`)
+        + (mirroringChecking ? '' : `<span class="ml-1.5 text-[11px] font-normal text-slate-400">${escapeHtml(db.mirroringStatus ?? '')}</span>`));
+
+    if (db.sourceName === CHECKING || db.sourceType === CHECKING) {
+        setHtml('mdbSource', skeleton('w-32'));
+    } else {
+        setText('mdbSource', [db.sourceName, db.sourceType && db.sourceType !== db.sourceName ? `(${db.sourceType})` : '']
+            .filter(Boolean).join(' ') || EMPTY);
+    }
+    setText('mdbCreated', db.createdAt ? formatDateTime(db.createdAt) : 'Not available');
 }
 
 export async function executeGetMirroringStatus() {
@@ -487,20 +611,52 @@ export async function executeGetMirroringStatus() {
     const isCurrent = latest('mirroringStatus');
     await withBusy('btnGetMirroringStatus', async () => {
         try {
-            const status = await discoveryApi.getMirroringStatus({ ...target, signal: isCurrent.signal });
-            if (isCurrent()) renderMirroringStatus(status);
+            const live = await discoveryApi.getMirroringStatus({ ...target, signal: isCurrent.signal });
+            if (isCurrent()) trackMirroringStatus('mirroringStatus', live);
         } catch (err) {
             if (isCurrent()) showApiError(err, 'Could not load mirroring status');
         }
     });
 }
 
-function renderMirroringStatus(status) {
+// Status trả ngay; lastSynchronization / recordSynchronized / currentLatency (tổng hợp từ các bảng) đến sau qua sự kiện mirroring-metrics
+function trackMirroringStatus(key, live) {
+    const status = live.data;
+    const pending = new Set(live.isStreaming ? live.pendingFields : []);
+    renderMirroringStatus(status, pending);
+
+    followStream(key, live, {
+        'mirroring-metrics': patch => {
+            Object.assign(status, patch);
+            Object.keys(patch).forEach(field => pending.delete(field));
+            renderMirroringStatus(status, pending);
+        },
+    }, () => {
+        if (!pending.size) return;
+        pending.forEach(field => { status[field] = null; });
+        pending.clear();
+        renderMirroringStatus(status, pending);
+    });
+}
+
+function renderMirroringStatus(status, pending = new Set()) {
     setHtml('mirroringStatusBadge', badge(status.status ?? 'Unknown', MIRRORING_STATUS_TONE[status.status] ?? 'muted'));
-    setText('msLastSync', status.lastSynchronization ? timeAgo(status.lastSynchronization) : EMPTY);
-    $('msLastSync')?.setAttribute('title', formatDateTime(status.lastSynchronization));
-    setText('msRecords', formatNumber(status.recordSynchronized));
-    setText('msLatency', status.currentLatency === null || status.currentLatency === undefined ? EMPTY : formatSeconds(status.currentLatency));
+
+    const lastSync = $('msLastSync');
+    if (pending.has('lastSynchronization')) {
+        setHtml('msLastSync', skeleton('w-16'));
+        lastSync?.removeAttribute('title');
+    } else {
+        setText('msLastSync', status.lastSynchronization ? timeAgo(status.lastSynchronization) : EMPTY);
+        lastSync?.setAttribute('title', formatDateTime(status.lastSynchronization));
+    }
+
+    if (pending.has('recordSynchronized')) setHtml('msRecords', skeleton('w-16'));
+    else setText('msRecords', formatNumber(status.recordSynchronized));
+
+    if (pending.has('currentLatency')) setHtml('msLatency', skeleton('w-10'));
+    else setText('msLatency', status.currentLatency === null || status.currentLatency === undefined ? EMPTY : formatSeconds(status.currentLatency));
+
     show('mirroringStatusCard');
 }
 
@@ -541,10 +697,10 @@ async function followMirroringStatus(target, targets) {
         await sleep(STATUS_POLL_MS);
         if (!isCurrent()) return;
         try {
-            const status = await discoveryApi.getMirroringStatus({ ...target, signal: isCurrent.signal });
+            const live = await discoveryApi.getMirroringStatus({ ...target, signal: isCurrent.signal });
             if (!isCurrent()) return;
-            renderMirroringStatus(status);
-            if (targets.includes(status.status)) return;
+            trackMirroringStatus('statusFollow', live);
+            if (targets.includes(live.data.status)) return;
         } catch (err) {
             console.warn('Mirroring status poll failed', err);
         }
