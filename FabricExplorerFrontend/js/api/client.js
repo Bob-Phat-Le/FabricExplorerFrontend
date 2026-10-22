@@ -11,7 +11,7 @@ export class ApiError extends Error {
     }
 }
 
-function parseError(payload, status) {
+export function parseError(payload, status) {
     const err = payload?.error;
     if (err && typeof err === 'object') {
         return {
