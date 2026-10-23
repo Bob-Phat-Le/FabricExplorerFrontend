@@ -194,29 +194,43 @@ export function handleWsIdInput() {}
 function collectOauthForm() {
     const { isEdit } = store.connectionEditingState;
     const v = id => $(id)?.value?.trim() ?? '';
+    const isGuid = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+
     const name = v('oauthConnName');
     const workspaceId = v('oauthWorkspaceId');
     const endpoint = v('oauthEndpoint');
     const clientId = v('oauthClientId');
     const clientSecret = v('oauthClientSecret');
 
-    const missing = [];
-    if (!name) missing.push('Connection Name');
-    if (!workspaceId) missing.push('Workspace ID');
-    if (!endpoint) missing.push('Token Endpoint');
-    if (!clientId) missing.push('Client ID');
-    if (!isEdit && !clientSecret) missing.push('Client Secret');
+    const missing = [
+        !name && 'Connection Name',
+        !workspaceId && 'Workspace ID',
+        !endpoint && 'Token Endpoint',
+        !clientId && 'Client ID',
+        !isEdit && !clientSecret && 'Client Secret'
+    ].filter(Boolean);
+
     if (missing.length) {
         showToast(`Please fill in: ${missing.join(', ')}`, 'warning');
         return null;
     }
 
+    if (!isGuid(workspaceId))
+        return showToast('Workspace ID must be a valid GUID.', 'warning'), null;
+
+    if (!isGuid(clientId))
+        return showToast('Client ID must be a valid GUID.', 'warning'), null;
+
     let tenantId = null;
-    try { tenantId = new URL(endpoint).pathname.match(TOKEN_PATH_RE)?.[1] ?? null; } catch {  }
-    if (!tenantId) {
-        showToast('Token endpoint must look like https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token', 'warning');
-        return null;
-    }
+    try {
+        tenantId = new URL(endpoint).pathname.match(TOKEN_PATH_RE)?.[1];
+    } catch { }
+
+    if (!tenantId)
+        return showToast('Token endpoint must look like https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token', 'warning'), null;
+
+    if (!isGuid(tenantId))
+        return showToast('Tenant ID in the token endpoint must be a valid GUID.', 'warning'), null;
 
     const payload = { name, workspaceId, tenantId, tokenEndpoint: endpoint, clientId };
     if (clientSecret) payload.clientSecret = clientSecret;
