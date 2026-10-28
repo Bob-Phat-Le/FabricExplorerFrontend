@@ -1,6 +1,7 @@
 import type { Connection } from '@/types/connection';
 import type { FabricItem, JobInstance } from '@/types/fabric';
 import type { Lakehouse, MirroredDatabaseSummary, Warehouse, Workspace } from '@/types/discovery';
+import type { Notification } from '@/types/notification';
 
 export const connections: Connection[] = [
   {
@@ -52,4 +53,42 @@ export const warehouses: Warehouse[] = [
 
 export const mirroredDbs: MirroredDatabaseSummary[] = [
   { mirroredDatabaseId: '8a421e3f-9b8c-7d6e-5f4a-3b2c1d0e9f8a', mirroredDatabaseName: 'CustomerDB', workspaceId: WS, workspaceName: 'Production Analytics', sourceType: 'AzureSqlDatabase', sourceName: 'CustomerSource', createdAt: null, status: 'Active', mirroringStatus: 'Running' },
+];
+
+const USER = '00000000-0000-0000-0000-000000000001';
+
+export const notifications: Notification[] = [
+  {
+    id: 'n-1',
+    userId: USER,
+    type: 'operation.succeeded',
+    title: 'Load table completed',
+    message: 'The Customers table was loaded successfully.',
+    operationId: 'op-1',
+    isRead: false,
+    createdAt: '2026-10-28T09:45:00Z',
+    readAt: null,
+  },
+  {
+    id: 'n-2',
+    userId: USER,
+    type: 'operation.failed',
+    title: 'Load table failed',
+    message: 'Unable to load the CustomerOrders table. Schema mismatch.',
+    operationId: 'op-2',
+    isRead: false,
+    createdAt: '2026-10-28T09:30:00Z',
+    readAt: null,
+  },
+  {
+    id: 'n-3',
+    userId: USER,
+    type: 'connection.created.succeeded',
+    title: 'Connection created',
+    message: "Connection 'Production Fabric' was created successfully.",
+    operationId: null,
+    isRead: true,
+    createdAt: '2026-10-28T09:10:00Z',
+    readAt: '2026-10-28T09:12:00Z',
+  },
 ];

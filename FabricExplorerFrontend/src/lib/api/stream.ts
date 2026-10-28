@@ -175,3 +175,90 @@ export async function openStream(
   }
   await readEventStream(streamed.streamId, (frame) => dispatch(frame.event, frame.data), signal);
 }
+
+export interface NotificationStreamOptions {
+  signal: AbortSignal;
+  /** Gọi cho từng sự kiện (`unread-count` | `notification`) với payload đã JSON.parse. */
+  onEvent: (name: string, payload: unknown) => void;
+  /** Gọi mỗi lần kết nối thành công; `reconnected` = true từ lần thứ hai (có thể đã lỡ sự kiện). */
+  onOpen?: (reconnected: boolean) => void;
+}
+
+const abortableSleep = (ms: number, signal: AbortSignal) =>
+  new Promise<void>((resolve) => {
+    const t = setTimeout(resolve, ms);
+    signal.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(t);
+        resolve();
+      },
+      { once: true },
+    );
+  });
+
+/**
+ * Kết nối SSE dài hạn tới GET /notifications/stream và tự nối lại.
+ * Backend tự đóng kết nối sau ~80% MaxLifetime nên đóng bình thường cũng được nối lại.
+ * Lỗi 4xx (trừ 429), ví dụ 401/403, dừng hẳn để không spam server.
+ * Chỉ dừng khi `signal` bị abort.
+ */
+export async function streamNotifications({ signal, onEvent, onOpen }: NotificationStreamOptions): Promise<void> {
+  if (API_CONFIG.useMock) return;
+
+  let attempt = 0;
+  let opened = false;
+
+  while (!signal.aborted) {
+    try {
+      const url = new URL(`${API_CONFIG.baseUrl}/notifications/stream`, window.location.origin);
+      const res = await fetch(url, { headers: { Accept: 'text/event-stream', ...API_CONFIG.getAuthHeaders() }, signal });
+
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        const { message, code, details, traceId } = parseError(payload, res.status);
+        throw new ApiError(message, { status: res.status, code, details, traceId });
+      }
+      if (!res.body) throw networkError('Live connection has no body');
+
+      attempt = 0;
+      onOpen?.(opened);
+      opened = true;
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      try {
+        for (;;) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+
+          buffer += decoder.decode(chunk.value, { stream: true });
+          let boundary: RegExpExecArray | null;
+          while ((boundary = /\r?\n\r?\n/.exec(buffer))) {
+            const raw = buffer.slice(0, boundary.index);
+            buffer = buffer.slice(boundary.index + boundary[0].length);
+            const frame = parseFrame(raw);
+            if (!frame) continue;
+            try {
+              onEvent(frame.event, JSON.parse(frame.data));
+            } catch {
+              console.warn(`Ignoring malformed "${frame.event}" notification event`, frame.data);
+            }
+          }
+        }
+      } finally {
+        reader.cancel().catch(() => {});
+      }
+    } catch (err) {
+      if (signal.aborted) return;
+      if (err instanceof ApiError && err.status >= 400 && err.status < 500 && err.status !== 429) {
+        console.error('Notification stream stopped', err);
+        return;
+      }
+    }
+
+    attempt++;
+    await abortableSleep(Math.min(30000, 1000 * 2 ** (attempt - 1)), signal);
+  }
+}

@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation';
 import * as authApi from '@/lib/api/auth.api';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useToast } from '@/providers/ToastProvider';
+import { useNotifications } from '@/providers/NotificationProvider';
 
-export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
+export function Header({ onToggleSidebar, onToggleNotificationSidebar }: { onToggleSidebar: () => void, onToggleNotificationSidebar: () => void }) {
   const router = useRouter();
   const { showToast, showApiError } = useToast();
+  const { unreadCount } = useNotifications();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -54,12 +56,17 @@ export function Header({ onToggleSidebar }: { onToggleSidebar: () => void }) {
       <div className="flex items-center space-x-3">
         <button
           type="button"
-          onClick={() => showToast('No new alert notifications', 'info')}
+          // onClick={() => showToast('No new alert notifications', 'info')}
+          onClick={onToggleNotificationSidebar}
           className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-full transition-colors relative"
           title="Notifications"
         >
           <i className="fa-regular fa-bell text-base" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-indigo-600 rounded-full ring-2 ring-white" />
+          {unreadCount > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 rounded-full bg-indigo-600 text-white text-[10px] font-semibold leading-4 text-center ring-2 ring-white">
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </span>
+          )}
         </button>
 
         <button
