@@ -170,4 +170,32 @@ export const mocks = {
     jobs: () => ({ items: seeds.jobs, continuationToken: null as string | null }),
     job: (req: RequestOptions) => seeds.jobs.find((j) => req.path.endsWith(j.id)),
   },
+  notifications: {
+    list: (req: RequestOptions) => {
+      const { skip = 0, take = 50, unreadOnly } = req.query ?? {};
+      return [...seeds.notifications]
+        .filter((n) => !unreadOnly || !n.isRead)
+        .sort((x, y) => y.createdAt.localeCompare(x.createdAt))
+        .slice(Number(skip), Number(skip) + Number(take));
+    },
+    unreadCount: () => seeds.notifications.filter((n) => !n.isRead).length,
+    markAsRead: (req: RequestOptions) => {
+      const n = seeds.notifications.find((x) => x.id === decodeURIComponent(idFromPath(req)));
+      if (!n) throw new ApiError('Notification not found', { status: 404, code: 'notification.not_found' });
+      if (!n.isRead) {
+        n.isRead = true;
+        n.readAt = new Date().toISOString();
+      }
+      return n;
+    },
+    markAllAsRead: () => {
+      const now = new Date().toISOString();
+      const unread = seeds.notifications.filter((n) => !n.isRead);
+      unread.forEach((n) => {
+        n.isRead = true;
+        n.readAt = now;
+      });
+      return { message: `${unread.length} notification(s) marked as read` };
+    },
+  },
 };
