@@ -5,7 +5,6 @@ interface StepCardProps {
   total: number;
   title: string;
   description: string;
-  /** Thay cho nhãn mặc định "Step n of total" (bước cuối dùng nhãn "Ready to …"). */
   badge?: ReactNode;
   children: ReactNode;
 }

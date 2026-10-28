@@ -178,9 +178,7 @@ export async function openStream(
 
 export interface NotificationStreamOptions {
   signal: AbortSignal;
-  /** Gọi cho từng sự kiện (`unread-count` | `notification`) với payload đã JSON.parse. */
   onEvent: (name: string, payload: unknown) => void;
-  /** Gọi mỗi lần kết nối thành công; `reconnected` = true từ lần thứ hai (có thể đã lỡ sự kiện). */
   onOpen?: (reconnected: boolean) => void;
 }
 
@@ -197,12 +195,6 @@ const abortableSleep = (ms: number, signal: AbortSignal) =>
     );
   });
 
-/**
- * Kết nối SSE dài hạn tới GET /notifications/stream và tự nối lại.
- * Backend tự đóng kết nối sau ~80% MaxLifetime nên đóng bình thường cũng được nối lại.
- * Lỗi 4xx (trừ 429), ví dụ 401/403, dừng hẳn để không spam server.
- * Chỉ dừng khi `signal` bị abort.
- */
 export async function streamNotifications({ signal, onEvent, onOpen }: NotificationStreamOptions): Promise<void> {
   if (API_CONFIG.useMock) return;
 

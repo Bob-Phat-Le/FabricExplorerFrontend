@@ -5,7 +5,6 @@ import { HISTORY, type ReplStatus } from '../constants';
 type Filter = 'All' | ReplStatus;
 const FILTERS: Filter[] = ['All', 'Running', 'Completed'];
 
-/** TODO(api): dữ liệu cứng; nối replicationApi.list() khi backend sẵn sàng. */
 export function HistoryTable() {
   const { showToast } = useToast();
   const [filter, setFilter] = useState<Filter>('All');

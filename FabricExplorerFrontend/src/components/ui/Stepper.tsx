@@ -9,7 +9,6 @@ interface StepperProps {
   steps: StepDef[];
   current: number;
   onSelect: (step: number) => void;
-  /** Các class dưới đây phải là chuỗi literal ở nơi gọi để Tailwind quét được. */
   minWidthClass: string;
   gapClass: string;
   lineClass: string;
@@ -17,7 +16,6 @@ interface StepperProps {
 
 const BADGE_BASE = 'w-7 h-7 rounded-full font-bold flex items-center justify-center text-xs transition-all';
 
-/** Thanh tiến trình cho wizard nhiều bước: đã qua = xanh lá + dấu check, hiện tại = indigo, chưa tới = xám. */
 export function Stepper({ steps, current, onSelect, minWidthClass, gapClass, lineClass }: StepperProps) {
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm overflow-x-auto">

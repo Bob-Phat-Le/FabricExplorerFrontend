@@ -55,7 +55,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     setHasMoreState(value);
   }, []);
 
-  /** Tải lại từ đầu (skip = 0). Giữ danh sách cũ trong lúc tải để không bị nháy. */
   const refresh = useCallback(async () => {
     const seq = ++loadSeq.current;
     moreBusy.current = false;
@@ -87,7 +86,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     moreBusy.current = true;
     setLoadingMore(true);
     try {
-      // Backend phân trang theo skip/take và không trả tổng số: hết dữ liệu khi trang trả về chưa đầy.
       const rows = await notificationApi.list({
         skip: itemsRef.current.length,
         take: NOTIFICATION_PAGE_SIZE,
@@ -121,7 +119,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     [commit, refresh, setHasMore],
   );
 
-  /** Optimistic: đổi UI ngay, lỗi thì khôi phục đúng vị trí cũ. */
   const markAsRead = useCallback(
     async (id: string) => {
       const index = itemsRef.current.findIndex((n) => n.id === id);
@@ -178,7 +175,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [commit, setHasMore, showApiError]);
 
-  // Sự kiện realtime: `unread-count` (đồng bộ số) và `notification` (thông báo mới).
   const handleStreamEvent = useCallback(
     (name: string, payload: unknown) => {
       const evt = payload as NotificationStreamEvent | null;
@@ -202,7 +198,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const ctrl = new AbortController();
 
-    // Số chưa đọc ban đầu (chạy cả ở chế độ mock, nơi không có SSE).
     notificationApi
       .getUnreadCount()
       .then((count) => {
@@ -213,7 +208,6 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     streamNotifications({
       signal: ctrl.signal,
       onEvent: handleStreamEvent,
-      // Nối lại sau khi mất kết nối: có thể đã lỡ sự kiện, DB mới là nguồn sự thật nên tải lại danh sách.
       onOpen: (reconnected) => {
         if (reconnected) void refreshRef.current();
       },

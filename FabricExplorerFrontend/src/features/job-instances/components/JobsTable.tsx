@@ -12,7 +12,6 @@ interface Props {
 const SELECT = 'text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white font-medium outline-none';
 
 export function JobsTable({ jobs, onInspect, onLoadNext }: Props) {
-  // TODO: tìm kiếm / lọc vốn là hàm rỗng trong bản gốc — giữ nguyên, các điều khiển chưa lọc dữ liệu.
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('All');
   const [invoke, setInvoke] = useState('All');

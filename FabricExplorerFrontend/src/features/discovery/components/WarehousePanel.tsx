@@ -28,7 +28,7 @@ export function WarehousePanel({ active }: { active: boolean }) {
   const { isBusy, withBusy } = useBusy();
 
   const [warehouse, setWarehouse] = useState<WarehouseDetails | null>(null);
-  const [connString, setConnString] = useState<string | null>(null); // null = thẻ chưa hiện
+  const [connString, setConnString] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
 
   const resetResults = useCallback(() => {
@@ -53,7 +53,6 @@ export function WarehousePanel({ active }: { active: boolean }) {
         if (!isCurrent()) return;
         setWarehouse(live.data);
 
-        // Probe SQL có thể chậm: onlineStatus = "Checking" cho tới khi sự kiện online-status đến
         followStream(
           'warehouse',
           live,

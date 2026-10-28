@@ -25,7 +25,6 @@ export function StepFile({ form, update, selectFile, removeFile, onNext }: Props
       title="File & Upload Mode"
       description="Select or drag-and-drop a file to stage and choose upload behavior."
     >
-      {/* TODO(api): chọn file giả lập; cần <input type="file"> thật để ingestion.submit nhận được file. */}
       {!form.hasFile ? (
         <div
           onClick={() => selectFile('customers.csv', 'CSV', '24.8 MB')}

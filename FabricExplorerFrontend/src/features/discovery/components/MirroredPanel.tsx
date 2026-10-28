@@ -29,7 +29,6 @@ const CONFIG: ResourceConfig<MirroredDatabaseSummary> = {
   nameOf: (i) => i.mirroredDatabaseName,
 };
 
-/** Trạng thái mirroring + các trường còn chờ sự kiện `mirroring-metrics` (hiện skeleton). */
 interface StatusView {
   data: MirroringStatus;
   pending: string[];
@@ -62,7 +61,6 @@ export function MirroredPanel({ active }: { active: boolean }) {
 
   const list = useResourceList(CONFIG, active, resetResults);
 
-  /** Ngữ cảnh + mục đang chọn; null (kèm toast) nếu thiếu. */
   const target = (): Target | null => {
     const ctx = requireContext();
     const item = ctx && list.getSelected();
@@ -82,7 +80,6 @@ export function MirroredPanel({ active }: { active: boolean }) {
         if (!isCurrent()) return;
         setDb(live.data);
 
-        // mirroring-status và source-info độc lập nhau: cái nào xong trước hiện trước
         followStream(
           'mirroredDb',
           live,
@@ -112,7 +109,6 @@ export function MirroredPanel({ active }: { active: boolean }) {
   };
 
   // ---- Mirroring status ----
-  // Status trả ngay; lastSynchronization / recordSynchronized / currentLatency (tổng hợp từ các bảng) đến sau qua mirroring-metrics
   const trackMirroringStatus = (key: string, live: Awaited<ReturnType<typeof discoveryApi.getMirroringStatus>>) => {
     setStatus({ data: live.data, pending: live.isStreaming ? live.pendingFields : [] });
 
@@ -147,7 +143,6 @@ export function MirroredPanel({ active }: { active: boolean }) {
     });
   };
 
-  // Sau start/stop: hỏi lại /status mỗi vài giây cho tới khi đạt trạng thái mong muốn.
   const followMirroringStatus = async (t: Target, goals: string[]) => {
     const isCurrent = latest('statusFollow');
     for (let i = 0; i < STATUS_POLL_MAX; i++) {

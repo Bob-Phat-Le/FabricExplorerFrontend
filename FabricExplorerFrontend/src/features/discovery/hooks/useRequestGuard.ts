@@ -5,18 +5,10 @@ import { useToast } from '@/providers/ToastProvider';
 
 export type Guard = (() => boolean) & { signal: AbortSignal };
 
-/**
- * Chống "kết quả đến muộn" cho các thao tác theo key:
- * - `latest(key)` huỷ request/stream cũ của key và trả hàm `isCurrent()` (+ `signal`) cho lần gọi mới;
- * - `invalidate(...keys)` làm mọi lần gọi đang chạy của các key đó trở nên lỗi thời;
- * - `followStream` nhận sự kiện SSE và luôn gọi `onSettled` để chốt các trường còn "Checking".
- * Mọi thứ tự huỷ khi component unmount.
- */
 export function useRequestGuard() {
   const { showToast } = useToast();
   const seqs = useRef<Record<string, number>>({});
   const ctrls = useRef<Record<string, AbortController | undefined>>({});
-  // Key 'abc#n' thuộc nhóm 'abc' (stopStreams('abc') dừng cả nhóm).
   const streams = useRef(new Map<string, AbortController>());
 
   const stopStreams = useCallback((group: string) => {
@@ -50,9 +42,6 @@ export function useRequestGuard() {
     [stopStreams],
   );
 
-  /**
-   * `onSettled` chạy khi stream kết thúc hoặc lỗi (không chạy khi bị huỷ) để UI không kẹt ở trạng thái đang kiểm tra.
-   */
   const followStream = useCallback(
     (key: string, live: Streamed<unknown> | undefined, handlers: StreamHandlers, onSettled?: (err?: unknown) => void) => {
       streams.current.get(key)?.abort();

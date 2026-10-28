@@ -59,7 +59,6 @@ export function LakehousePanel({ active }: { active: boolean }) {
 
   const list = useResourceList(CONFIG, active, resetResults);
 
-  // Mỗi trang bảng có stream riêng; chỉ cập nhật/chốt các dòng thuộc trang đó.
   const trackTableStats = (live: Parameters<typeof followStream>[1], pageItems: LakehouseTable[]) => {
     if (!live?.isStreaming) return;
     const names = new Set(pageItems.map((t) => t.name));
@@ -95,7 +94,7 @@ export function LakehousePanel({ active }: { active: boolean }) {
 
     const target: Selection = sel;
     const isCurrent = latest('tables');
-    if (!append) stopStreams('tablesLive'); // danh sách mới: bỏ các stream của danh sách cũ (Load more thì giữ lại)
+    if (!append) stopStreams('tablesLive');
 
     await withBusy(append ? 'more' : ['list', 'refresh'], async () => {
       try {

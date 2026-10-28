@@ -2,7 +2,6 @@ import { useCallback, useMemo } from 'react';
 import { useConnection } from '@/providers/ConnectionProvider';
 import { useToast } from '@/providers/ToastProvider';
 
-/** Ngữ cảnh gửi kèm mọi request discovery: connection active (X-Connection-Id) + workspace của nó. */
 export function useDiscoveryContext() {
   const { activeConnection } = useConnection();
   const { showToast } = useToast();

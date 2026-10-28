@@ -1,7 +1,6 @@
 import { CHECKING } from '@/lib/api/stream';
 import { TONES, type Tone } from '../constants';
 
-/** "Checking" = giá trị tạm của backend khi kết quả thật đang đến qua stream -> hiện spinner. */
 export function StatusBadge({ label, tone = 'muted', title }: { label: string; tone?: Tone; title?: string }) {
   const checking = label === CHECKING;
   return (

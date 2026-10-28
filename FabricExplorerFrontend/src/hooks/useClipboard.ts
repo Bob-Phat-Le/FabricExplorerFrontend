@@ -10,7 +10,6 @@ function legacyCopy(text: string) {
   document.body.removeChild(temp);
 }
 
-/** Trả về `copy(text, message)`: chép vào clipboard rồi hiện toast thành công. */
 export function useClipboard() {
   const { showToast } = useToast();
   return useCallback(

@@ -8,7 +8,6 @@ interface Props {
   items: FabricItem[];
   loadItems: () => Promise<void>;
   onSelect: (item: FabricItem) => void;
-  /** Nút kích hoạt menu; nhận `toggle`. */
   children: (toggle: () => void) => ReactNode;
 }
 
@@ -19,7 +18,6 @@ const TYPE_FILTERS = [
   { label: 'Mirrored DB' },
 ];
 
-/** Nút + menu chọn item có sẵn. Dùng ở cả trạng thái chưa chọn và "Change Item". */
 export function ItemSelector({ items, loadItems, onSelect, children }: Props) {
   const { showApiError } = useToast();
   const [open, setOpen] = useState(false);
@@ -43,7 +41,6 @@ export function ItemSelector({ items, loadItems, onSelect, children }: Props) {
 
       {open && (
         <div className="absolute left-0 mt-2 w-80 bg-white rounded-xl border border-slate-200 shadow-2xl z-30 p-3 text-left space-y-2">
-          {/* TODO: tìm kiếm / lọc theo loại vốn là hàm rỗng trong bản gốc — giữ nguyên, chưa lọc. */}
           <div className="relative">
             <i className="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs" />
             <input

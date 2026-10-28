@@ -3,7 +3,6 @@ import * as itemsApi from '@/lib/api/items.api';
 import { useToast } from '@/providers/ToastProvider';
 import type { FabricItem, JobInstance } from '@/types/fabric';
 
-/** Danh sách item, item đang theo dõi và các job instance của nó (có phân trang bằng continuationToken). */
 export function useJobInstances() {
   const { showToast, showApiError } = useToast();
 
@@ -19,7 +18,6 @@ export function useJobInstances() {
     itemsLoaded.current = true;
   }, []);
 
-  // Vào trang -> nạp danh sách item một lần.
   useEffect(() => {
     loadItems().catch((err) => showApiError(err));
   }, [loadItems, showApiError]);
@@ -46,7 +44,6 @@ export function useJobInstances() {
     [loadJobs, showToast],
   );
 
-  /** Item vừa tạo: đưa lên đầu danh sách rồi theo dõi luôn. */
   const addAndSelect = useCallback(
     async (item: FabricItem) => {
       setItems((prev) => [item, ...prev]);

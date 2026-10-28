@@ -12,7 +12,6 @@ export function clampPageSize(raw: string | number): number {
   return Math.min(n, CONN_PAGE_SIZE_MAX);
 }
 
-/** Cửa sổ `size` số trang quanh trang hiện tại. */
 export function pageWindow(current: number, total: number, size = 5): number[] {
   let start = Math.max(1, current - Math.floor(size / 2));
   const end = Math.min(total, start + size - 1);
