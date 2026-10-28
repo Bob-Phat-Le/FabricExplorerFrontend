@@ -1,6 +1,5 @@
 import type { FabricItem } from '@/types/fabric';
 
-/** "MMm SSs" từ start → end; '—' nếu chưa kết thúc. */
 export function formatDuration(start: string, end: string | null): string {
   if (!end) return '—';
   const ms = new Date(end).getTime() - new Date(start).getTime();

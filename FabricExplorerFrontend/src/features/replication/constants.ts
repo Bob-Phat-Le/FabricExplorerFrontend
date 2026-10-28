@@ -24,7 +24,6 @@ export const STEPS: StepDef[] = [
 
 export const TOTAL_STEPS = STEPS.length;
 
-/** TODO(api): thay bằng danh sách Mirrored Database thật từ discovery API. */
 export const DATABASES = [
   { value: 'CustomerMirror', workspace: 'Data Platform' },
   { value: 'SalesMirror', workspace: 'Analytics' },
@@ -54,7 +53,6 @@ export interface ReplicationHistoryRow {
   lastActivity: string;
 }
 
-/** TODO(api): thay bằng replicationApi.list() khi backend có GET /replications. */
 export const HISTORY: ReplicationHistoryRow[] = [
   { database: 'CustomerMirror', schema: 'dbo', table: 'Customers', format: 'Parquet', rowMarker: true, status: 'Running', lastActivity: 'Just now' },
   { database: 'SalesMirror', schema: 'dbo', table: 'Orders', format: 'CSV', rowMarker: false, status: 'Running', lastActivity: '2 min ago' },

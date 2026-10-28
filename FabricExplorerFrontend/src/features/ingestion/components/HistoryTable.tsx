@@ -5,7 +5,6 @@ import { HISTORY, type HistoryStatus } from '../constants';
 type Filter = 'All' | HistoryStatus;
 const FILTERS: Filter[] = ['All', 'Completed', 'Failed'];
 
-/** TODO(api): dữ liệu cứng; nối ingestionApi.list() khi backend sẵn sàng. */
 export function HistoryTable() {
   const { showToast } = useToast();
   const [filter, setFilter] = useState<Filter>('All');

@@ -27,7 +27,6 @@ export function NextButton({ onClick, disabled, children }: { onClick: () => voi
   );
 }
 
-/** Hàng nút điều hướng cuối mỗi bước. Không có `onPrev` (bước 1) thì nút bên phải dạt về cuối hàng. */
 export function WizardFooter({ onPrev, children }: { onPrev?: () => void; children: ReactNode }) {
   return (
     <div className={`flex ${onPrev ? 'justify-between' : 'justify-end'} pt-4 border-t border-slate-100`}>
@@ -37,7 +36,6 @@ export function WizardFooter({ onPrev, children }: { onPrev?: () => void; childr
   );
 }
 
-/** Hộp công tắc bật/tắt có tiêu đề + mô tả (đầu bước 3 ingestion, bước 3 & 5 replication). */
 export function SettingRow({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return (
     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">

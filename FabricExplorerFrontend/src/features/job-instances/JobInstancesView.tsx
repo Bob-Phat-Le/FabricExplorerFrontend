@@ -14,10 +14,8 @@ export function JobInstancesView() {
   const { items, loadItems, activeItem, jobs, selectItem, addAndSelect, refresh, loadNextPage } = useJobInstances();
   const [creating, setCreating] = useState(false);
   const [inspected, setInspected] = useState<JobInstance | null>(null);
-  // TODO: auto-refresh vốn là hàm rỗng trong bản gốc — giữ nguyên, chưa tự làm mới.
   const [autoRefresh, setAutoRefresh] = useState('30');
 
-  // Item chưa chọn thì không có job nào để hiện.
   const visibleJobs = activeItem ? jobs : [];
 
   return (

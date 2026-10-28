@@ -13,11 +13,6 @@ export interface ResourceConfig<T> {
 
 type Status = 'loading' | 'no-connection' | 'empty' | 'error' | 'ready';
 
-/**
- * Nạp danh sách tài nguyên (lakehouse / warehouse / mirrored db) của connection active cho một dropdown.
- * - Chỉ nạp khi `active` (tab đang hiển thị) và chỉ nạp lại khi đổi connection hoặc bấm Reload.
- * - `onReset` chạy trước mỗi lần nạp để panel xoá kết quả cũ.
- */
 export function useResourceList<T extends { workspaceName?: string | null }>(
   cfg: ResourceConfig<T>,
   active: boolean,
@@ -104,7 +99,6 @@ export function useResourceList<T extends { workspaceName?: string | null }>(
 
   const options = status === 'ready' ? items.map((i) => ({ value: cfg.idOf(i), label: `${cfg.nameOf(i)} (${i.workspaceName ?? 'Workspace'})` })) : [];
 
-  /** Mục đang chọn; nếu chưa chọn được thì hiện toast cảnh báo và trả null. */
   const getSelected = useCallback((): T | null => {
     const item = selectedId ? (items.find((i) => cfg.idOf(i) === selectedId) ?? null) : null;
     if (!item) showToast(`Select a ${cfg.noun} first.`, 'warning');

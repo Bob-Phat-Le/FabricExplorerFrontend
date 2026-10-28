@@ -33,7 +33,6 @@ export function NotificationSidebar({
         markAllAsRead,
     } = useNotifications();
 
-    // Danh sách là lịch sử trong DB: tải lại mỗi lần mở sidebar (realtime chỉ bổ sung khi đang mở app).
     useEffect(() => {
         if (!collapsed) void refresh();
     }, [collapsed, refresh]);

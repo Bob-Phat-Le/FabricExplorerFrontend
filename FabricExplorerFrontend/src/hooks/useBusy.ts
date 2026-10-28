@@ -1,6 +1,5 @@
 import { useCallback, useState } from 'react';
 
-/** Theo dõi nút nào đang bận (disable + mờ đi) trong lúc một thao tác bất đồng bộ chạy. */
 export function useBusy() {
   const [busy, setBusy] = useState<ReadonlySet<string>>(() => new Set());
 

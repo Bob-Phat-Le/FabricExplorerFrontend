@@ -4,7 +4,6 @@ interface Props {
   id: string;
   label: string;
   list: ResourceList;
-  /** Người dùng đổi lựa chọn -> panel xoá kết quả cũ. */
   onSelectionChange: () => void;
 }
 
