@@ -1,7 +1,30 @@
 'use client'
 
+import { useEffect, useState } from 'react';
+import { useToast } from '@/providers/ToastProvider';
+import { consumeQuerySample } from '../shared/querySampleStore';
+
+const DEFAULT_QUERY = `SELECT 
+    CustomerId, 
+    CustomerName, 
+    Email, 
+    CreditLimit 
+FROM dbo.Customers 
+WHERE CreditLimit > 50000;
+`;
+
 export function EditorView(){
     const doSomething = () => console.log("this functions has not done yet");
+    const { showToast } = useToast();
+    const [sql, setSql] = useState(DEFAULT_QUERY);
+
+    // A query sample sent from Catalog > Tables (consumed once)
+    useEffect(() => {
+        const sample = consumeQuerySample();
+        if (!sample) return;
+        setSql(sample.sql);
+        showToast(sample.label ? `Loaded query sample for ${sample.label}` : 'Loaded query sample', 'success');
+    }, [showToast]);
     
     return (
         <section id="view-query-editor" className="space-y-6 max-w-7xl mx-auto">
@@ -161,17 +184,8 @@ export function EditorView(){
 
                 <div className="flex-1 flex font-mono text-xs text-emerald-400 leading-relaxed overflow-hidden relative">
                     <textarea id="sqlQueryTextarea" className="flex-1 bg-transparent text-emerald-400 outline-none resize-none font-mono text-xs leading-relaxed" spellCheck="false"
-                        defaultValue=
-                        {
-`SELECT 
-    CustomerId, 
-    CustomerName, 
-    Email, 
-    CreditLimit 
-FROM dbo.Customers 
-WHERE CreditLimit > 50000;
-`
-                        }
+                        value={sql}
+                        onChange={(e) => setSql(e.target.value)}
                     />
                 </div>
             </div>

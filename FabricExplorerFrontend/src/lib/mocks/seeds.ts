@@ -2,6 +2,7 @@ import type { Connection } from '@/types/connection';
 import type { FabricItem, JobInstance } from '@/types/fabric';
 import type { Lakehouse, MirroredDatabaseSummary, Warehouse, Workspace } from '@/types/discovery';
 import type { Notification } from '@/types/notification';
+import type { CatalogColumn, CatalogTableDetail, CatalogTree } from '@/types/catalog';
 
 export const connections: Connection[] = [
   {
@@ -92,3 +93,83 @@ export const notifications: Notification[] = [
     readAt: '2026-10-28T09:12:00Z',
   },
 ];
+
+// ---- Catalog (Tables explorer) ----
+type RawColumn = [name: string, type: string, nullable: boolean, description: string | null];
+
+const RAW_CATALOG: Record<string, Record<string, RawColumn[]>> = {
+  dbo: {
+    Customers: [
+      ['CustomerId', 'bigint', false, 'Primary key customer identifier'],
+      ['CustomerName', 'string', false, 'Full legal customer name'],
+      ['Email', 'string', true, 'Primary contact email address'],
+      ['CreditLimit', 'decimal(18,2)', false, 'Approved line of credit in USD'],
+      ['RegionId', 'int', false, 'Sales geographic region code'],
+      ['IsActive', 'boolean', false, null],
+    ],
+    Orders: [
+      ['OrderId', 'bigint', false, 'Unique sales order identifier'],
+      ['CustomerId', 'bigint', false, 'Foreign key to dbo.Customers'],
+      ['OrderDate', 'timestamp', false, 'Order placement timestamp'],
+      ['TotalAmount', 'decimal(18,2)', false, 'Net total transaction value'],
+      ['OrderStatus', 'string', false, 'Order processing status'],
+    ],
+    OrderItems: [
+      ['OrderItemId', 'bigint', false, 'Line item surrogate key'],
+      ['OrderId', 'bigint', false, 'Foreign key to dbo.Orders'],
+      ['ProductId', 'bigint', false, 'Foreign key to dbo.Products'],
+      ['Quantity', 'int', false, 'Ordered unit quantity'],
+      ['UnitPrice', 'decimal(18,2)', false, 'Unit price at purchase'],
+    ],
+    Products: [
+      ['ProductId', 'bigint', false, 'Product SKU identifier'],
+      ['ProductName', 'string', false, 'Catalog product title'],
+      ['Category', 'string', false, null],
+      ['UnitPrice', 'decimal(18,2)', false, 'Retail list price'],
+      ['InStock', 'int', false, 'Available warehouse inventory'],
+    ],
+  },
+  sales: {
+    Transactions: [
+      ['TransactionId', 'string', false, 'Transaction GUID hash'],
+      ['Amount', 'decimal(18,2)', false, 'Transaction amount'],
+      ['PaymentMethod', 'string', true, 'Payment channel used'],
+      ['TxTimestamp', 'timestamp', false, 'Transaction execution time'],
+    ],
+  },
+};
+
+export const catalogTree: CatalogTree = {
+  lakehouseId: lakehouses[0].lakehouseId,
+  totalTables: Object.values(RAW_CATALOG).reduce((n, tables) => n + Object.keys(tables).length, 0),
+  schemas: Object.entries(RAW_CATALOG).map(([schema, tables]) => ({
+    name: schema,
+    tables: Object.entries(tables).map(([name, cols]) => ({
+      name,
+      schema,
+      type: 'MANAGED',
+      format: 'DELTA',
+      columnCount: cols.length,
+    })),
+  })),
+};
+
+export const catalogTables: Record<string, CatalogTableDetail> = Object.fromEntries(
+  Object.entries(RAW_CATALOG).flatMap(([schema, tables]) =>
+    Object.entries(tables).map(([name, cols]): [string, CatalogTableDetail] => [
+      `${schema}.${name}`,
+      {
+        schema,
+        name,
+        fullName: `${schema}.${name}`,
+        description: name === 'Customers' ? 'Customer master data synchronised nightly from the CRM.' : null,
+        type: 'MANAGED',
+        format: 'DELTA',
+        location: `Tables/${schema}/${name}`,
+        columns: cols.map(
+          ([colName, type, nullable, description], position): CatalogColumn => ({ name: colName, type, position, nullable, description }),
+        ),
+      },
+    ]),
+  ),
+);

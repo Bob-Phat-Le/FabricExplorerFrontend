@@ -50,13 +50,13 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
       <nav className="py-3 px-2 space-y-1">
         {NAV_ITEMS.map((item) => {
           if ("groupLabel" in item) {
-            const isOpen = openGroups[item.groupLabel] ?? false;
-
             const hasActiveItem = item.group.some(
               (navItem) =>
                 pathname === navItem.href ||
                 pathname.startsWith(`${navItem.href}/`),
             );
+            // Open by default when the current page lives in this group; the user can still collapse it.
+            const isOpen = openGroups[item.groupLabel] ?? hasActiveItem;
 
             return (
               <div key={item.groupLabel}>
