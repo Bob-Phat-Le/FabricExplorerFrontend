@@ -9,6 +9,7 @@ interface NotificationListProps {
     hasMore: boolean;
     error: boolean;
     onMarkAsRead: (id: string) => void;
+    onRemove: (id: string) => void;
     onLoadMore: () => void;
     onRetry: () => void;
 }
@@ -49,6 +50,7 @@ export function NotificationList({
     hasMore,
     error,
     onMarkAsRead,
+    onRemove,
     onLoadMore,
     onRetry,
 }: NotificationListProps) {
@@ -98,6 +100,7 @@ export function NotificationList({
                     key={notification.id}
                     notification={notification}
                     onMarkAsRead={onMarkAsRead}
+                    onRemove={onRemove}
                 />
             ))}
 

@@ -31,6 +31,7 @@ export function NotificationSidebar({
         loadMore,
         markAsRead,
         markAllAsRead,
+        remove
     } = useNotifications();
 
     useEffect(() => {
@@ -139,6 +140,7 @@ export function NotificationSidebar({
                     onMarkAsRead={(id) => void markAsRead(id)}
                     onLoadMore={() => void loadMore()}
                     onRetry={() => void refresh()}
+                    onRemove={(id) => void remove(id)}
                 />
             </div>
         </aside>

@@ -22,6 +22,7 @@ interface NotificationContextValue {
   loadMore: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
+  remove: (id: string) => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -153,6 +154,42 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     [commit, showApiError],
   );
 
+  const remove = useCallback(
+    async (id: string) => {
+        const index = itemsRef.current.findIndex((n) => n.id === id);
+        const target = itemsRef.current[index];
+
+        if (!target) return;
+
+        // Optimistic removal
+        commit(itemsRef.current.filter((n) => n.id !== id));
+
+        if (!target.isRead) {
+            setUnreadCount((c) => Math.max(0, c - 1));
+        }
+
+        try {
+            await notificationApi.remove(id);
+        } catch (err) {
+            // Rollback if API request fails
+            const current = itemsRef.current;
+
+            if (!current.some((n) => n.id === id)) {
+                const next = [...current];
+                next.splice(Math.min(index, next.length), 0, target);
+                commit(next);
+            }
+
+            if (!target.isRead) {
+                setUnreadCount((c) => c + 1);
+            }
+
+            showApiError(err, 'Could not remove notification');
+        }
+    },
+    [commit, showApiError],
+  );
+
   const markAllAsRead = useCallback(async () => {
     if (markAllBusy.current) return;
     markAllBusy.current = true;
@@ -231,8 +268,9 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
       loadMore,
       markAsRead,
       markAllAsRead,
+      remove
     }),
-    [items, unreadCount, filter, loading, loadingMore, hasMore, error, markingAll, setFilter, refresh, loadMore, markAsRead, markAllAsRead],
+    [items, unreadCount, filter, loading, loadingMore, hasMore, error, markingAll, setFilter, refresh, loadMore, markAsRead, markAllAsRead, remove],
   );
 
   return <NotificationContext.Provider value={value}>{children}</NotificationContext.Provider>;

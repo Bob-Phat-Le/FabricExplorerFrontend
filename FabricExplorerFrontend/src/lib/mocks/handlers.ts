@@ -207,5 +207,9 @@ export const mocks = {
       });
       return { message: `${unread.length} notification(s) marked as read` };
     },
+    delete: (req: RequestOptions) => {
+      const id = seeds.notifications.find((x) => x.id === decodeURIComponent(idFromPath(req)))
+      return { message: 'remove notification-${id} successfully'}
+    }
   },
 };

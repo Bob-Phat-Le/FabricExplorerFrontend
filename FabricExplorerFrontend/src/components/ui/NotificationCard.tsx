@@ -3,11 +3,13 @@ import type { Notification } from "@/types/notification";
 interface NotificationCardProps {
     notification: Notification;
     onMarkAsRead: (id: string) => void;
+    onRemove: (id: string) => void;
 }
 
 export function NotificationCard({
     notification,
     onMarkAsRead,
+    onRemove,
 }: NotificationCardProps) {
     const formattedTime = new Date(
         notification.createdAt
@@ -28,10 +30,13 @@ export function NotificationCard({
                 <div className="flex min-w-0 flex-1 items-start gap-2">
                     {!notification.isRead && (
                         <span
-                            className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${failed ? "bg-rose-500" : "bg-indigo-600"}`}
+                            className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                                failed ? "bg-rose-500" : "bg-indigo-600"
+                            }`}
                             aria-label="Unread"
                         />
                     )}
+
                     <h4
                         className={`min-w-0 flex-1 text-sm ${
                             notification.isRead
@@ -43,19 +48,51 @@ export function NotificationCard({
                     </h4>
                 </div>
 
-                {!notification.isRead && (
+                <div className="flex shrink-0 items-center gap-1">
+                    {!notification.isRead && (
+                        <button
+                            type="button"
+                            onClick={() => onMarkAsRead(notification.id)}
+                            className="
+                                flex h-6 w-6 items-center justify-center
+                                rounded text-gray-400
+                                transition-colors
+                                hover:bg-gray-200 hover:text-gray-700
+                                focus:outline-none focus:ring-2 focus:ring-gray-300
+                            "
+                            aria-label="Mark as read"
+                            title="Mark as read"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                className="h-4 w-4"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M5 13l4 4L19 7"
+                                />
+                            </svg>
+                        </button>
+                    )}
+
+                    {/* Remove notification */}
                     <button
                         type="button"
-                        onClick={() => onMarkAsRead(notification.id)}
+                        onClick={() => onRemove(notification.id)}
                         className="
-                            flex h-6 w-6 shrink-0 items-center justify-center
+                            flex h-6 w-6 items-center justify-center
                             rounded text-gray-400
                             transition-colors
                             hover:bg-gray-200 hover:text-gray-700
                             focus:outline-none focus:ring-2 focus:ring-gray-300
                         "
-                        aria-label="Mark as read"
-                        title="Mark as read"
+                        aria-label="Remove notification"
+                        title="Remove notification"
                     >
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -68,11 +105,11 @@ export function NotificationCard({
                             <path
                                 strokeLinecap="round"
                                 strokeLinejoin="round"
-                                d="M5 13l4 4L19 7"
+                                d="M6 6l12 12M18 6L6 18"
                             />
                         </svg>
                     </button>
-                )}
+                </div>
             </div>
 
             {/* Message */}

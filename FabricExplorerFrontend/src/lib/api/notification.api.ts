@@ -34,3 +34,8 @@ export const markAllAsRead = () =>
   call<unknown>({ method: 'POST', path: `${BasePath}/read-all` }, mocks.notifications.markAllAsRead).then((r) =>
     unwrap<{ message: string }>(r),
   );
+
+export const remove = (id: string) => 
+  call<unknown>({ method: 'DELETE', path: `${BasePath}/${encodeURIComponent(id)}`}, mocks.notifications.delete).then((r) => 
+    unwrap<{ message: string}>(r)
+  )
