@@ -20,9 +20,9 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
         key={item.href}
         href={item.href}
         className={cn(
-          "w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all text-xs font-medium group",
+          "w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors",
           active
-            ? "bg-indigo-50 text-indigo-600 border-r-[3px] border-indigo-600 font-semibold"
+            ? "w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-md text-xs font-semibold sub-nav-active transition-colors"
             : "text-slate-600 hover:bg-slate-100",
         )}
       >
@@ -103,7 +103,33 @@ export function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle:
                 {/* Children */}
                 {!collapsed && isOpen && (
                   <div className="ml-8 mt-1 space-y-1">
-                    {item.group.map((navItem) => renderNavItem(navItem))}
+                    {item.group.map((navItem) => {
+                      const active =
+                        pathname === navItem.href ||
+                        pathname.startsWith(`${navItem.href}/`);
+
+                      return (
+                        <Link
+                          key={navItem.href}
+                          href={navItem.href}
+                          className={cn(
+                            "w-full flex items-center space-x-2.5 px-3 py-1.5 rounded-md text-xs transition-colors",
+                            active
+                              ? "font-semibold bg-indigo-100 text-indigo-700"
+                              : "font-medium text-slate-600 hover:bg-slate-100",
+                          )}
+                        >
+                          <i
+                            className={cn(
+                              "fa-solid text-[11px]",
+                              navItem.icon,
+                              active ? "text-indigo-600" : "text-slate-400",
+                            )}
+                          />
+                          {!collapsed && <span>{navItem.label}</span>}
+                        </Link>
+                      );
+                    })}
                   </div>
                 )}
               </div>
