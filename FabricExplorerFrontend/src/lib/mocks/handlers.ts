@@ -5,6 +5,7 @@ import type { CreateItemPayload, FabricItem } from '@/types/fabric';
 import type { IngestionResult } from '@/types/ingestion';
 import type { ReplicationResult } from '@/types/replication';
 import type { LakehouseTable } from '@/types/discovery';
+import type { CatalogTableDetail, CatalogTree } from '@/types/catalog';
 import * as seeds from './seeds';
 
 const ok = () => ({ ok: true });
@@ -130,6 +131,15 @@ export const mocks = {
       { tableName: 'Orders', source: 'dbo.Orders', target: 'dbo.Orders', status: 'Snapshotting', lastSync: new Date().toISOString(), lag: 12, processedRows: 842301 },
       { tableName: 'Products', source: 'dbo.Products', target: 'dbo.Products', status: 'Failed', lastSync: new Date(Date.now() - 8 * 60e3).toISOString(), lag: 120, processedRows: 24820 },
     ],
+  },
+  catalog: {
+    tree: (): CatalogTree => seeds.catalogTree,
+    table: (req: RequestOptions): CatalogTableDetail => {
+      const { schema, table } = req.meta as { schema: string; table: string };
+      const found = seeds.catalogTables[`${schema}.${table}`];
+      if (!found) throw new ApiError(`Table '${schema}.${table}' was not found in this lakehouse.`, { status: 404, code: 'catalog.table_not_found' });
+      return found;
+    },
   },
   stream: {
     play: async (streamId: string, dispatch: StreamDispatch, signal?: AbortSignal) => {
