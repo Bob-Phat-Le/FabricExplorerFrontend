@@ -7,6 +7,7 @@ import { buildSampleQuery } from '../../shared/sql';
 import { saveQuerySample } from '../../shared/querySampleStore';
 import type { CatalogTablesState } from '../hooks/useCatalogTables';
 import { PanelMessage, SECONDARY_BUTTON } from './PanelMessage';
+import { spans } from 'next/dist/build/webpack/plugins/profiling-plugin';
 
 function ColumnsSkeleton() {
   return (
@@ -119,6 +120,7 @@ export function TableDetailPanel({ state }: { state: CatalogTablesState }) {
                   <th className="p-2.5">Column</th>
                   <th className="p-2.5">Type</th>
                   <th className="p-2.5">Nullable</th>
+                  <th className="p-2.5">PK</th>
                   <th className="p-2.5 pr-4">Description</th>
                 </tr>
               </thead>
@@ -140,6 +142,9 @@ export function TableDetailPanel({ state }: { state: CatalogTablesState }) {
                         <td className="p-2.5 font-mono text-indigo-600 whitespace-nowrap">{c.type}</td>
                         <td className="p-2.5">
                           {c.nullable ? <span className="text-amber-600 font-semibold">Yes</span> : <span className="text-slate-500">No</span>}
+                        </td>
+                        <td>
+                          {c.primaryKey == c.name ? <span><i className="fa-solid fa-key text-slate-400" /></span> : <span className="text-slate-500">{c.primaryKey}</span>}
                         </td>
                         <td className="p-2.5 pr-4 text-slate-500 font-normal break-words min-w-[12rem]">
                           {c.description ?? <span className="text-slate-300">{EMPTY}</span>}

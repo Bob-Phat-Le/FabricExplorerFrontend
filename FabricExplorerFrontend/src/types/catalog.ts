@@ -22,6 +22,7 @@ export interface CatalogColumn {
   name: string;
   type: string;
   position: number;
+  primaryKey: string;
   nullable: boolean;
   description: string | null;
 }
