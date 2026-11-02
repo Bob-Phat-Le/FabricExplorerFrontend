@@ -75,14 +75,20 @@ export function CatalogItemBar({ state }: { state: CatalogTablesState }) {
 
   if (!selectedLakehouse) {
     return (
-      <div className={cn(CARD, 'flex items-center space-x-3.5')}>
-        <div className="w-10 h-10 rounded-xl bg-slate-100 animate-pulse shrink-0" />
-        <div className="space-y-2">
-          <div>
-            <Skeleton width="w-48" />
-          </div>
-          <div>
-            <Skeleton width="w-72" />
+      <div className={cn(CARD, 'relative flex items-center space-x-3.5')}>
+        <div className="w-10 h-10 rounded-xl bg-slate-100 animate-pulse shrink-0 opacity-60" />
+
+        <div className="space-y-2 opacity-60">
+          <Skeleton width="w-48" />
+          <Skeleton width="w-72" />
+        </div>
+
+        <div className="absolute inset-0 z-10 flex items-center justify-center">
+          <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 shadow-sm ring-1 ring-slate-200">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" />
+            <span className="text-sm font-medium text-slate-600">
+              Loading lakehouse...
+            </span>
           </div>
         </div>
       </div>
