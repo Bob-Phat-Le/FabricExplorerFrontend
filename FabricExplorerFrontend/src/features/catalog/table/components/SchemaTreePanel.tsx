@@ -8,17 +8,29 @@ import { PanelMessage, SECONDARY_BUTTON } from './PanelMessage';
 
 function TreeSkeleton() {
   return (
-    <div className="space-y-3 animate-pulse" aria-label="Loading tables">
-      {[4, 2].map((rows, i) => (
-        <div key={i} className="space-y-1.5">
-          <div className="h-3.5 w-24 rounded bg-slate-200" />
-          <div className="pl-3 border-l-2 border-slate-100 space-y-1.5">
-            {Array.from({ length: rows }, (_, r) => (
-              <div key={r} className="h-7 rounded-lg bg-slate-100" />
-            ))}
-          </div>
+    <div className="relative space-y-3" aria-label="Loading tables">
+      <div className="absolute inset-0 z-10 flex items-center justify-center">
+        <div className="flex items-center gap-2 rounded-lg bg-white px-3 py-2 shadow-sm ring-1 ring-slate-200">
+          <div className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-slate-600" />
+          <span className="text-sm font-medium text-slate-600">
+            Loading tables...
+          </span>
         </div>
-      ))}
+      </div>
+
+      <div className="space-y-3 animate-pulse opacity-60">
+        {[4, 2].map((rows, i) => (
+          <div key={i} className="space-y-1.5">
+            <div className="h-3.5 w-24 rounded bg-slate-200" />
+
+            <div className="pl-3 border-l-2 border-slate-100 space-y-1.5">
+              {Array.from({ length: rows }, (_, r) => (
+                <div key={r} className="h-7 rounded-lg bg-slate-100" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
