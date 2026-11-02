@@ -1,32 +1,62 @@
 'use client';
 
-import { useState } from 'react';
 import { cn } from '@/lib/cn';
 import { LakehousePanel } from './components/LakehousePanel';
 import { MirroredPanel } from './components/MirroredPanel';
 import { WarehousePanel } from './components/WarehousePanel';
 import type { ResourceType } from './constants';
+import { useDiscoveryState } from './hooks/useDiscoveryState';
 
-const RESOURCES: { type: ResourceType; title: string; description: string; icon: string }[] = [
-  { type: 'lakehouse', title: 'Lakehouse', description: 'Explore tables and load data', icon: 'fa-building-columns' },
-  { type: 'warehouse', title: 'Warehouse', description: 'Inspect warehouses & connection strings', icon: 'fa-warehouse' },
-  { type: 'mirrored', title: 'Mirrored Database', description: 'Monitor and control database mirroring', icon: 'fa-arrows-rotate' },
+const RESOURCES: {
+  type: ResourceType;
+  title: string;
+  description: string;
+  icon: string;
+}[] = [
+  {
+    type: 'lakehouse',
+    title: 'Lakehouse',
+    description: 'Explore tables and load data',
+    icon: 'fa-building-columns',
+  },
+  {
+    type: 'warehouse',
+    title: 'Warehouse',
+    description: 'Inspect warehouses & connection strings',
+    icon: 'fa-warehouse',
+  },
+  {
+    type: 'mirrored',
+    title: 'Mirrored Database',
+    description: 'Monitor and control database mirroring',
+    icon: 'fa-arrows-rotate',
+  },
 ];
 
 export function DiscoveryView() {
-  const [current, setCurrent] = useState<ResourceType>('lakehouse');
+  const {
+    current,
+    lakehouseId,
+    setCurrent,
+    setLakehouseId,
+  } = useDiscoveryState();
 
   return (
     <section className="space-y-6 max-w-5xl mx-auto">
       <div>
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Discovery</h1>
-        <p className="text-xs text-slate-500 mt-0.5">Explore and inspect Microsoft Fabric resources.</p>
+        <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+          Discovery
+        </h1>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Explore and inspect Microsoft Fabric resources.
+        </p>
       </div>
 
       {/* Resource Type Selector Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {RESOURCES.map((r) => {
           const on = r.type === current;
+
           return (
             <button
               key={r.type}
@@ -34,7 +64,9 @@ export function DiscoveryView() {
               onClick={() => setCurrent(r.type)}
               className={cn(
                 'cursor-pointer rounded-xl p-4 transition-all shadow-sm group text-left',
-                on ? 'border-2 border-indigo-600 bg-indigo-50/40' : 'border border-slate-200 bg-white hover:border-indigo-300',
+                on
+                  ? 'border-2 border-indigo-600 bg-indigo-50/40'
+                  : 'border border-slate-200 bg-white hover:border-indigo-300',
               )}
             >
               <div className="flex items-center space-x-3">
@@ -48,9 +80,14 @@ export function DiscoveryView() {
                 >
                   <i className={`fa-solid ${r.icon}`} />
                 </div>
+
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm">{r.title}</h3>
-                  <p className="text-[11px] text-slate-500">{r.description}</p>
+                  <h3 className="font-bold text-slate-900 text-sm">
+                    {r.title}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {r.description}
+                  </p>
                 </div>
               </div>
             </button>
@@ -58,8 +95,14 @@ export function DiscoveryView() {
         })}
       </div>
 
-      <LakehousePanel active={current === 'lakehouse'} />
+      <LakehousePanel
+        active={current === 'lakehouse'}
+        selectedLakehouseId={lakehouseId}
+        onSelectedLakehouseChange={setLakehouseId}
+      />
+
       <WarehousePanel active={current === 'warehouse'} />
+
       <MirroredPanel active={current === 'mirrored'} />
     </section>
   );
