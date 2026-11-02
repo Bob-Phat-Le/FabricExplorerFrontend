@@ -11,15 +11,30 @@ export interface ResourceConfig<T> {
   nameOf: (item: T) => string;
 }
 
-type Status = 'loading' | 'no-connection' | 'empty' | 'error' | 'ready';
+export interface ResourceListOptions {
+  selectedId?: string | null;
+  onSelectedIdChange?: (id: string) => void;
+}
 
-export function useResourceList<T extends { workspaceName?: string | null }>(
+type Status =
+  | 'loading'
+  | 'no-connection'
+  | 'empty'
+  | 'error'
+  | 'ready';
+
+export function useResourceList<T extends { workspaceName?: string | null },>(
   cfg: ResourceConfig<T>,
   active: boolean,
   onReset: () => void,
+  {
+    selectedId: persistedSelectedId = null,
+    onSelectedIdChange,
+  }: ResourceListOptions = {},
 ) {
   const { showApiError, showToast } = useToast();
   const { ctx } = useDiscoveryContext();
+
   const connectionId = ctx?.connectionId;
   const workspaceId = ctx?.workspaceId;
 
@@ -31,7 +46,19 @@ export function useResourceList<T extends { workspaceName?: string | null }>(
   const seq = useRef(0);
   const ctrl = useRef<AbortController | null>(null);
   const onResetRef = useRef(onReset);
+  const persistedIdRef = useRef(persistedSelectedId);
+  const onSelectedIdChangeRef = useRef(onSelectedIdChange);
+
   onResetRef.current = onReset;
+  persistedIdRef.current = persistedSelectedId;
+  onSelectedIdChangeRef.current = onSelectedIdChange;
+
+  onResetRef.current = onReset;
+
+  const select = useCallback((id: string) => {
+    setSelectedId(id);
+    onSelectedIdChangeRef.current?.(id);
+  }, []);
 
   const ensureLoaded = useCallback(
     async ({ force = false }: { force?: boolean } = {}) => {
@@ -39,12 +66,17 @@ export function useResourceList<T extends { workspaceName?: string | null }>(
         loadedFor.current = null;
         onResetRef.current();
         setItems([]);
+        setSelectedId('');
         setStatus('no-connection');
         return;
       }
-      if (!force && loadedFor.current === connectionId) return;
+
+      if (!force && loadedFor.current === connectionId) {
+        return;
+      }
 
       ctrl.current?.abort();
+
       const own = (ctrl.current = new AbortController());
       const mySeq = ++seq.current;
 
@@ -52,23 +84,52 @@ export function useResourceList<T extends { workspaceName?: string | null }>(
       setStatus('loading');
 
       try {
-        const list = (await cfg.fetch({ connectionId, workspaceId: workspaceId as string, refresh: force, signal: own.signal })) ?? [];
-        if (mySeq !== seq.current) return;
+        const list =
+          (await cfg.fetch({
+            connectionId,
+            workspaceId: workspaceId as string,
+            refresh: force,
+            signal: own.signal,
+          })) ?? [];
+
+        if (mySeq !== seq.current) {
+          return;
+        }
 
         loadedFor.current = connectionId;
         setItems(list);
+
         if (!list.length) {
+          setSelectedId('');
           setStatus('empty');
           return;
         }
-        setSelectedId(cfg.idOf(list[0]));
+
+        const persistedId = persistedIdRef.current;
+        const persistedItem =
+          persistedId && list.some((item) => cfg.idOf(item) === persistedId)
+            ? persistedId
+            : null;
+
+        const nextSelectedId = persistedItem ?? cfg.idOf(list[0]);
+
+        setSelectedId(nextSelectedId);
+        onSelectedIdChangeRef.current?.(nextSelectedId);
         setStatus('ready');
       } catch (err) {
-        if (mySeq !== seq.current) return;
+        if (mySeq !== seq.current) {
+          return;
+        }
+
         loadedFor.current = null;
         setItems([]);
+        setSelectedId('');
         setStatus('error');
-        showApiError(err, `Could not load ${cfg.noun}s`);
+
+        showApiError(
+          err,
+          `Could not load ${cfg.noun}s`,
+        );
       }
     },
     [cfg, connectionId, workspaceId, showApiError],
@@ -97,25 +158,53 @@ export function useResourceList<T extends { workspaceName?: string | null }>(
             ? `Could not load ${cfg.noun}s — click Reload`
             : null;
 
-  const options = status === 'ready' ? items.map((i) => ({ value: cfg.idOf(i), label: `${cfg.nameOf(i)} (${i.workspaceName ?? 'Workspace'})` })) : [];
+  const resourceOptions =
+    status === 'ready'
+      ? items.map((item) => ({
+          value: cfg.idOf(item),
+          label: `${cfg.nameOf(item)} (${
+            item.workspaceName ?? 'Workspace'
+          })`,
+        }))
+      : [];
 
   const getSelected = useCallback((): T | null => {
-    const item = selectedId ? (items.find((i) => cfg.idOf(i) === selectedId) ?? null) : null;
-    if (!item) showToast(`Select a ${cfg.noun} first.`, 'warning');
-    return item;
-  }, [cfg, items, selectedId, showToast]);
+    const item = selectedId
+      ? (items.find(
+          (item) => cfg.idOf(item) === selectedId,
+        ) ?? null)
+      : null;
 
-  const selectedLabel = options.find((o) => o.value === selectedId)?.label;
+    if (!item) {
+      showToast(
+        `Select a ${cfg.noun} first.`,
+        'warning',
+      );
+    }
+
+    return item;
+  }, [
+    cfg,
+    items,
+    selectedId,
+    showToast,
+  ]);
+
+  const selectedLabel = resourceOptions.find(
+    (option) => option.value === selectedId,
+  )?.label;
 
   return {
     placeholder,
-    options,
+    options: resourceOptions,
     selectedId,
     selectedLabel,
-    select: setSelectedId,
+    select,
     reload: () => ensureLoaded({ force: true }),
     getSelected,
   };
 }
 
-export type ResourceList = ReturnType<typeof useResourceList>;
+export type ResourceList = ReturnType<
+  typeof useResourceList
+>;
