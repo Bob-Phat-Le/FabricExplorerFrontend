@@ -6,6 +6,7 @@ import type { IngestionResult } from '@/types/ingestion';
 import type { ReplicationResult } from '@/types/replication';
 import type { LakehouseTable } from '@/types/discovery';
 import type { CatalogTableDetail, CatalogTree } from '@/types/catalog';
+import { landingZoneMocks } from './landingZone';
 import * as seeds from './seeds';
 
 const ok = () => ({ ok: true });
@@ -141,6 +142,7 @@ export const mocks = {
       return found;
     },
   },
+  landingZone: landingZoneMocks,
   stream: {
     play: async (streamId: string, dispatch: StreamDispatch, signal?: AbortSignal) => {
       const events = mockStreams.get(streamId) ?? [];
