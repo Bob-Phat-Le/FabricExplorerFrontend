@@ -26,6 +26,7 @@ export const NAV_ITEMS: (NavItem | NavItemGroup)[] = [
 
   { href: '/ingestion', label: 'Ingestion', icon: 'fa-circle-arrow-down' },
   { href: '/replication', label: 'Replication', icon: 'fa-arrows-rotate' },
+  { href: '/landing-zone', label: 'Landing Zone', icon: 'fa-folder-tree' },
   { href: '/job-instances', label: 'Job Instances', icon: 'fa-clock-rotate-left' },
   { href: '/settings', label: 'Settings', icon: 'fa-gear' },
 ];
