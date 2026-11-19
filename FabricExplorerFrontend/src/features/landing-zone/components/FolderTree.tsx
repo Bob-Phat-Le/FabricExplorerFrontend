@@ -82,8 +82,14 @@ export function FolderTree({ state, onNewFolder }: { state: LandingZoneState; on
 
       <div className="px-4 py-2.5 border-t border-slate-100 bg-slate-50/50 text-[11px] text-slate-400 flex items-center justify-between shrink-0">
         <span>Hierarchy view</span>
-        <button type="button" onClick={() => void state.expandAll()} className="text-indigo-600 font-semibold hover:underline">
-          Expand All
+        <button
+          type="button"
+          disabled={state.expandingAll}
+          onClick={() => void state.expandAll()}
+          className="inline-flex items-center gap-2 text-indigo-600 font-semibold hover:underline disabled:opacity-100 disabled:cursor-wait"
+        >
+          {state.expandingAll && <i className="fa-solid fa-spinner fa-spin text-sm" />}
+          {state.expandingAll ? 'Expanding…' : 'Expand All'}
         </button>
       </div>
     </div>

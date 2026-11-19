@@ -12,6 +12,7 @@ interface Props {
   connectionId: string;
   onClose: () => void;
   onDownload: (item: LandingZoneItem) => void;
+  downloading: boolean;
   onRename: (item: LandingZoneItem) => void;
   onMove: (item: LandingZoneItem) => void;
   onDelete: (item: LandingZoneItem) => void;
@@ -28,7 +29,7 @@ function Meta({ label, value, mono = true, wide = false }: { label: string; valu
   );
 }
 
-export function FileDrawer({ item, connectionId, onClose, onDownload, onRename, onMove, onDelete }: Props) {
+export function FileDrawer({ item, connectionId, onClose, onDownload, downloading, onRename, onMove, onDelete }: Props) {
   const copy = useClipboard();
   const [details, setDetails] = useState<LandingZoneFileDetails | null>(null);
   const [preview, setPreview] = useState<LandingZonePreview | null>(null);
@@ -76,9 +77,9 @@ export function FileDrawer({ item, connectionId, onClose, onDownload, onRename, 
         </div>
 
         <div className="px-6 py-2.5 border-b border-slate-100 flex items-center flex-wrap gap-2 text-xs shrink-0">
-          <button type="button" onClick={() => onDownload(item)} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg flex items-center space-x-1.5">
-            <i className="fa-solid fa-download text-[11px]" />
-            <span>Download</span>
+          <button type="button" disabled={downloading} onClick={() => onDownload(item)} className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg flex items-center space-x-1.5 disabled:opacity-80 disabled:cursor-wait">
+            <i className={cn('fa-solid text-[11px]', downloading ? 'fa-spinner fa-spin' : 'fa-download')} />
+            <span>{downloading ? 'Downloading…' : 'Download'}</span>
           </button>
           <button type="button" onClick={() => onRename(item)} className="px-2.5 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold rounded-lg flex items-center space-x-1">
             <i className="fa-solid fa-pen text-[10px] text-slate-400" />
@@ -172,9 +173,9 @@ export function FileDrawer({ item, connectionId, onClose, onDownload, onRename, 
                   <i className="fa-regular fa-eye-slash" />
                 </div>
                 <p className="text-xs font-bold text-slate-700">Preview is not available for this file type.</p>
-                <button type="button" onClick={() => onDownload(item)} className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs inline-flex items-center space-x-1.5">
-                  <i className="fa-solid fa-download" />
-                  <span>Download File</span>
+                <button type="button" disabled={downloading} onClick={() => onDownload(item)} className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-xs inline-flex items-center space-x-1.5 disabled:opacity-80 disabled:cursor-wait">
+                  <i className={cn('fa-solid', downloading ? 'fa-spinner fa-spin' : 'fa-download')} />
+                  <span>{downloading ? 'Downloading…' : 'Download File'}</span>
                 </button>
               </div>
             )}
