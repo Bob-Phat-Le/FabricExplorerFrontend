@@ -55,6 +55,8 @@ export function useLandingZone() {
   const [children, setChildren] = useState<Record<string, LandingZoneFolder[]>>({});
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set([ROOT]));
   const [loadingFolders, setLoadingFolders] = useState<ReadonlySet<string>>(() => new Set());
+  const [expandingAll, setExpandingAll] = useState(false);
+  const [downloadingPaths, setDownloadingPaths] = useState<ReadonlySet<string>>(() => new Set());
   const childrenRef = useRef(children);
   childrenRef.current = children;
   const expandedRef = useRef(expanded);
@@ -156,6 +158,8 @@ export function useLandingZone() {
     setListError(null);
     setChildren({});
     setExpanded(new Set([ROOT]));
+    setLoadingFolders(new Set());
+    setExpandingAll(false);
     setSearchText('');
     setSearchResults(null);
     setSelected(new Set());
@@ -264,35 +268,60 @@ export function useLandingZone() {
   );
 
   const expandAll = useCallback(async () => {
-    if (!connectionId) return;
-    const known: Record<string, LandingZoneFolder[]> = { ...childrenRef.current };
-    const open = new Set<string>([ROOT]);
+    if (!connectionId || expandingAll) return;
+
+    setExpandingAll(true);
+    setExpanded((prev) => new Set(prev).add(ROOT));
+
     let level = [ROOT];
     let visited = 0;
 
-    for (let depth = 0; depth < MAX_EXPAND_DEPTH && level.length > 0 && visited < MAX_EXPAND_FOLDERS; depth++) {
-      const loaded = await Promise.all(
-        level.map(async (path) => {
-          if (!known[path]) {
-            try {
-              known[path] = (await lzApi.listFolders(connectionId, path)).folders;
-            } catch {
-              known[path] = [];
+    try {
+      for (let depth = 0; depth < MAX_EXPAND_DEPTH && level.length > 0 && visited < MAX_EXPAND_FOLDERS; depth++) {
+        const loaded = await Promise.all(
+          level.map(async (path) => {
+            const cached = childrenRef.current[path];
+            if (cached !== undefined) {
+              setExpanded((prev) => new Set(prev).add(path));
+              return cached;
             }
-          }
-          return known[path];
-        }),
-      );
-      level.forEach((p) => open.add(p));
-      level = loaded.flat().map((f) => f.path);
-      visited += level.length;
-    }
 
-    if (connectionRef.current !== connectionId) return;
-    setChildren((prev) => ({ ...prev, ...known }));
-    setExpanded(open);
-    if (level.length > 0) showToast('Expanded the first levels only; open deeper folders manually.', 'info');
-  }, [connectionId, showToast]);
+            setLoadingFolders((prev) => new Set(prev).add(path));
+            try {
+              const folders = (await lzApi.listFolders(connectionId, path)).folders;
+              if (connectionRef.current !== connectionId) return [];
+
+              // Commit each folder as soon as its request completes so the tree renders progressively.
+              setChildren((prev) => ({ ...prev, [path]: folders }));
+              setExpanded((prev) => new Set(prev).add(path));
+              return folders;
+            } catch {
+              if (connectionRef.current === connectionId) {
+                setChildren((prev) => ({ ...prev, [path]: [] }));
+                setExpanded((prev) => new Set(prev).add(path));
+              }
+              return [];
+            } finally {
+              setLoadingFolders((prev) => {
+                const next = new Set(prev);
+                next.delete(path);
+                return next;
+              });
+            }
+          }),
+        );
+
+        level = loaded.flat().map((folder) => folder.path);
+        visited += level.length;
+      }
+
+      if (connectionRef.current === connectionId && level.length > 0) {
+        showToast('Expanded the first levels only; open deeper folders manually.', 'info');
+      }
+    } finally {
+      if (connectionRef.current === connectionId) setExpandingAll(false);
+    }
+  }, [connectionId, expandingAll, showToast]);
 
   const refresh = useCallback(
     async (silent = false) => {
@@ -456,12 +485,14 @@ export function useLandingZone() {
   const downloadItems = useCallback(
     async (items: LandingZoneItem[]) => {
       if (!connectionId) return;
-      // const files = items.filter((i) => !i.isFolder);
-      const files = items
+      const files = items;
       if (files.length === 0) {
         showToast('Select at least one file to download', 'warning');
         return;
       }
+
+      const paths = files.map((item) => item.path);
+      setDownloadingPaths((prev) => new Set([...prev, ...paths]));
       try {
         if (files.length === 1 && !files[0].isFolder) {
           saveBlob(await lzApi.downloadFile(connectionId, files[0].path), files[0].name);
@@ -473,6 +504,12 @@ export function useLandingZone() {
       } catch (err) {
         showApiError(err, 'Download failed');
         void loadOperations();
+      } finally {
+        setDownloadingPaths((prev) => {
+          const next = new Set(prev);
+          paths.forEach((path) => next.delete(path));
+          return next;
+        });
       }
     },
     [connectionId, showToast, showApiError, loadOperations],
@@ -544,6 +581,8 @@ export function useLandingZone() {
     children,
     expanded,
     loadingFolders,
+    expandingAll,
+    downloadingPaths,
     toggleExpand,
     expandAll,
 

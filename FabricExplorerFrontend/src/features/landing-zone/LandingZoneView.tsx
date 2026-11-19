@@ -195,6 +195,7 @@ export function LandingZoneView() {
           connectionId={state.connectionId}
           onClose={() => setDrawerItem(null)}
           onDownload={(item) => void state.downloadItems([item])}
+          downloading={state.downloadingPaths.has(drawerItem.path)}
           onRename={(item) => {
             setDrawerItem(null);
             setDialog({ type: 'rename', item });

@@ -150,9 +150,14 @@ export function FileBrowser({ state, onOpenFile, onUpload, onNewFolder, onRename
               <span>items selected</span>
             </div>
             <div className="flex items-center flex-wrap gap-1.5">
-              <button type="button" onClick={() => void state.downloadItems(selectedItems)} className="px-2.5 py-1 bg-white/15 hover:bg-white/25 rounded-lg font-semibold transition-colors flex items-center space-x-1">
-                <i className="fa-solid fa-download text-[11px]" />
-                <span>Download</span>
+              <button
+                type="button"
+                disabled={selectedItems.some((item) => state.downloadingPaths.has(item.path))}
+                onClick={() => void state.downloadItems(selectedItems)}
+                className="px-2.5 py-1 bg-white/15 hover:bg-white/25 rounded-lg font-semibold transition-colors flex items-center space-x-1 disabled:opacity-80"
+              >
+                <i className={cn('fa-solid text-[11px]', selectedItems.some((item) => state.downloadingPaths.has(item.path)) ? 'fa-spinner fa-spin' : 'fa-download')} />
+                <span>{selectedItems.some((item) => state.downloadingPaths.has(item.path)) ? 'Downloading…' : 'Download'}</span>
               </button>
               <button type="button" onClick={() => onTransfer('move', selectedItems)} className="px-2.5 py-1 bg-white/15 hover:bg-white/25 rounded-lg font-semibold transition-colors flex items-center space-x-1">
                 <i className="fa-solid fa-arrow-right-to-bracket text-[11px]" />
@@ -265,8 +270,20 @@ export function FileBrowser({ state, onOpenFile, onUpload, onNewFolder, onRename
                             <i className="fa-solid fa-folder-open text-xs" />
                           </button>
                         ) : (
-                          <button type="button" onClick={() => void state.downloadItems([item])} className={cn(BTN, 'hover:text-indigo-600 hover:bg-indigo-50')} title="Download File">
-                            <i className="fa-solid fa-download text-xs" />
+                          <button
+                            type="button"
+                            disabled={state.downloadingPaths.has(item.path)}
+                            onClick={() => void state.downloadItems([item])}
+                            className={cn(BTN, 'hover:text-indigo-600 hover:bg-indigo-50 disabled:opacity-100 disabled:cursor-wait')}
+                            title={state.downloadingPaths.has(item.path) ? 'Downloading…' : 'Download File'}
+                          >
+                            {state.downloadingPaths.has(item.path) ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700">
+                                <i className="fa-solid fa-spinner fa-spin text-base" />
+                              </span>
+                            ) : (
+                              <i className="fa-solid fa-download text-xs" />
+                            )}
                           </button>
                         )}
                         <button type="button" onClick={() => onRename(item)} className={cn(BTN, 'hover:text-slate-700 hover:bg-slate-100')} title="Rename">
