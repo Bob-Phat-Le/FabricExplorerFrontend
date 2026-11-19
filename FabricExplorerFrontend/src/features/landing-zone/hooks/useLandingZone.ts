@@ -456,13 +456,14 @@ export function useLandingZone() {
   const downloadItems = useCallback(
     async (items: LandingZoneItem[]) => {
       if (!connectionId) return;
-      const files = items.filter((i) => !i.isFolder);
+      // const files = items.filter((i) => !i.isFolder);
+      const files = items
       if (files.length === 0) {
         showToast('Select at least one file to download', 'warning');
         return;
       }
       try {
-        if (files.length === 1) {
+        if (files.length === 1 && !files[0].isFolder) {
           saveBlob(await lzApi.downloadFile(connectionId, files[0].path), files[0].name);
         } else {
           saveBlob(await lzApi.downloadArchive(connectionId, files.map((f) => f.path)), 'landing-zone-files.zip');
