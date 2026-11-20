@@ -221,7 +221,10 @@ export const landingZoneMocks = {
     return summarize(results);
   },
 
-  operations: (): LandingZoneOperation[] => operations,
+  operations: (req?: RequestOptions): LandingZoneOperation[] => {
+    const limit = Number(q(req ?? {}).limit);
+    return Number.isFinite(limit) && limit > 0 ? operations.slice(0, limit) : operations;
+  },
 
   getMetadataCapabilities,
   analyzeXsd,
