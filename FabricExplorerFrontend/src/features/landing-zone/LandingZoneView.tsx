@@ -157,7 +157,7 @@ export function LandingZoneView() {
             </div>
           </div>
 
-          <OperationsPanel operations={state.operations} />
+          <OperationsPanel connectionId={state.connectionId} refreshKey={state.operations} />
         </div>
       )}
 
