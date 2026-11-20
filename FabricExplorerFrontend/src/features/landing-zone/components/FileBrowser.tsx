@@ -9,6 +9,7 @@ interface Props {
   onOpenFile: (item: LandingZoneItem) => void;
   onUpload: () => void;
   onNewFolder: () => void;
+  onGenerateMetadata: () => void;
   onRename: (item: LandingZoneItem) => void;
   onDelete: (items: LandingZoneItem[]) => void;
   onTransfer: (mode: 'move' | 'copy', items: LandingZoneItem[]) => void;
@@ -58,7 +59,7 @@ function SortHeader({ field, label, state, className }: { field: LandingZoneSort
   );
 }
 
-export function FileBrowser({ state, onOpenFile, onUpload, onNewFolder, onRename, onDelete, onTransfer }: Props) {
+export function FileBrowser({ state, onOpenFile, onUpload, onNewFolder, onGenerateMetadata, onRename, onDelete, onTransfer }: Props) {
   const { items, selected, selectedItems, recursiveSearch } = state;
   const open = (item: LandingZoneItem) => (item.isFolder ? state.navigate(item.path) : onOpenFile(item));
   const empty = state.listState !== 'loading' && !state.searching && items.length === 0;
@@ -78,6 +79,10 @@ export function FileBrowser({ state, onOpenFile, onUpload, onNewFolder, onRename
             <button type="button" onClick={onNewFolder} className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl transition-colors flex items-center space-x-1.5">
               <i className="fa-solid fa-folder-plus text-amber-500" />
               <span>New Folder</span>
+            </button>
+            <button type="button" onClick={onGenerateMetadata} className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-colors flex items-center space-x-1.5">
+              <i className="fa-solid fa-wand-magic-sparkles text-indigo-300" />
+              <span>Generate Metadata</span>
             </button>
             <button type="button" onClick={() => void state.refresh()} className="p-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 rounded-xl transition-colors" title="Refresh Current Folder">
               <i className={cn('fa-solid fa-arrows-rotate text-xs', state.listState === 'loading' && 'fa-spin')} />
@@ -212,6 +217,9 @@ export function FileBrowser({ state, onOpenFile, onUpload, onNewFolder, onRename
               <div className="pt-2">
                 <button type="button" onClick={onUpload} className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700">
                   Upload Files
+                </button>
+                <button type="button" onClick={onGenerateMetadata} className="ml-2 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800">
+                  Generate Metadata
                 </button>
               </div>
             )}

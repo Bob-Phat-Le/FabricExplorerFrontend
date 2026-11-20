@@ -10,6 +10,7 @@ import { DeleteDialog, NewFolderDialog, RenameDialog, TransferDialog, UploadDial
 import { FileBrowser } from './components/FileBrowser';
 import { FileDrawer } from './components/FileDrawer';
 import { FolderTree } from './components/FolderTree';
+import { MetadataWizard } from './metadata/MetadataWizard';
 import { OperationsPanel } from './components/OperationsPanel';
 import { useLandingZone } from './hooks/useLandingZone';
 
@@ -17,6 +18,7 @@ type Dialog =
   | { type: 'upload' }
   | { type: 'newFolder' }
   | { type: 'configure' }
+  | { type: 'metadata' }
   | { type: 'rename'; item: LandingZoneItem }
   | { type: 'delete'; items: LandingZoneItem[] }
   | { type: 'transfer'; mode: 'move' | 'copy'; items: LandingZoneItem[] };
@@ -147,6 +149,7 @@ export function LandingZoneView() {
                 onOpenFile={setDrawerItem}
                 onUpload={() => setDialog({ type: 'upload' })}
                 onNewFolder={() => setDialog({ type: 'newFolder' })}
+                onGenerateMetadata={() => setDialog({ type: 'metadata' })}
                 onRename={(item) => setDialog({ type: 'rename', item })}
                 onDelete={(items) => setDialog({ type: 'delete', items })}
                 onTransfer={(mode, items) => setDialog({ type: 'transfer', mode, items })}
@@ -168,6 +171,7 @@ export function LandingZoneView() {
       {dialog?.type === 'newFolder' && (
         <NewFolderDialog parentPath={state.currentPath} working={state.working} onSubmit={state.createFolder} onClose={closeDialog} />
       )}
+      {dialog?.type === 'metadata' && <MetadataWizard state={state} onClose={closeDialog} onViewFile={setDrawerItem} />}
       {dialog?.type === 'rename' && (
         <RenameDialog item={dialog.item} working={state.working} onSubmit={(name) => state.renameItem(dialog.item, name)} onClose={closeDialog} />
       )}

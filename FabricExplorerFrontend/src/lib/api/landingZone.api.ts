@@ -1,5 +1,5 @@
 import { API_CONFIG } from './config';
-import { ApiError, call, parseError } from './client';
+import { ApiError, call, parseError, sleep } from './client';
 import { mocks } from '../mocks/handlers';
 import type {
   ConfigureLandingZonePayload,
@@ -12,6 +12,12 @@ import type {
   LandingZoneList,
   LandingZoneOperation,
   LandingZonePreview,
+  MetadataCapabilities,
+  MetadataPreview,
+  MetadataRequest,
+  PublishMetadataPayload,
+  PublishMetadataResult,
+  XsdAnalysis,
 } from '@/types/landingZone';
 
 interface Opts {
@@ -153,3 +159,38 @@ export async function downloadArchive(connectionId: string, paths: string[]): Pr
   });
   return res.blob();
 }
+
+// ---------- generate metadata (XSD -> _metadata.json) ----------
+
+/** Formats, their options and the Fabric data types the backend supports. */
+export const getMetadataCapabilities = () =>
+  call<unknown>({ method: 'GET', path: `${BASE}/metadata/capabilities` }, mocks.landingZone.getMetadataCapabilities).then((r) =>
+    unwrap<MetadataCapabilities>(r),
+  );
+
+/** Uploads an XSD and returns its record candidates with the recommended Fabric types. */
+export async function analyzeXsd(file: File, { signal }: Opts = {}): Promise<XsdAnalysis> {
+  if (API_CONFIG.useMock) {
+    await sleep(API_CONFIG.mockLatencyMs);
+    return structuredClone(await mocks.landingZone.analyzeXsd(file));
+  }
+
+  const form = new FormData();
+  form.append('file', file, file.name);
+
+  const res = await rawRequest(`${BASE}/analyze-xsd`, { method: 'POST', body: form, signal });
+  return unwrap<XsdAnalysis>(await res.json());
+}
+
+/** Validates the options and renders _metadata.json (invalid input is reported in `errors`, not thrown). */
+export const previewMetadata = (request: MetadataRequest, { signal }: Opts = {}) =>
+  call<unknown>({ method: 'POST', path: `${BASE}/preview`, body: request, signal }, mocks.landingZone.previewMetadata).then((r) =>
+    unwrap<MetadataPreview>(r),
+  );
+
+/** Writes {parentPath}/{schemaName}.schema/{tableName}/_metadata.json into the Landing Zone. */
+export const publishMetadata = (connectionId: string, payload: PublishMetadataPayload) =>
+  call<unknown>(
+    { method: 'POST', path: `${BASE}/publish`, headers: headers(connectionId), body: payload },
+    mocks.landingZone.publishMetadata,
+  ).then((r) => unwrap<PublishMetadataResult>(r));

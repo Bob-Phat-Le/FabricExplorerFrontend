@@ -11,6 +11,7 @@ export function formatBytes(bytes: number | null | undefined): string {
 
 export const nameOf = (path: string) => path.slice(path.lastIndexOf('/') + 1);
 export const parentOf = (path: string) => (path.includes('/') ? path.slice(0, path.lastIndexOf('/')) : '');
+export const joinPath = (...parts: string[]) => parts.filter(Boolean).join('/');
 export const displayPath = (path: string) => `/${path}`;
 
 /** Splits "a/b/c" into the folders to walk through: ["a", "a/b", "a/b/c"]. */

@@ -97,3 +97,96 @@ export interface LandingZoneOperation {
 export type LandingZoneSortField = 'name' | 'type' | 'size' | 'modified';
 export type LandingZoneViewMode = 'list' | 'grid';
 export type LandingZoneSearchScope = 'current' | 'recursive';
+
+// ---------- Generate Metadata (XSD -> Open Mirroring _metadata.json) ----------
+
+export type FormatOptionKind = 'Text' | 'EscapedText' | 'Choice' | 'Flag';
+
+/** Describes one option of a file format; the wizard renders its form from these descriptors. */
+export interface FormatOption {
+  key: string;
+  label: string;
+  kind: FormatOptionKind;
+  defaultValue: string;
+  required: boolean;
+  readOnly: boolean;
+  hint: string | null;
+  choices: string[] | null;
+  pattern: string | null;
+}
+
+export interface MetadataFormatInfo {
+  name: string;
+  title: string;
+  description: string;
+  requiresColumnTypes: boolean;
+  options: FormatOption[];
+}
+
+export interface MetadataCapabilities {
+  formats: MetadataFormatInfo[];
+  fabricTypes: string[];
+  metadataFileName: string;
+  schemaFolderSuffix: string;
+}
+
+export interface XsdRecordField {
+  name: string;
+  /** e.g. "xs:int" or "EmailAddressType" */
+  xsdType: string;
+  /** Open Mirroring data type; "" when the user has to choose */
+  recommendedFabricType: string;
+  nullable: boolean;
+  isKeyCandidate: boolean;
+  isAttribute: boolean;
+  isNested: boolean;
+  isRepeating: boolean;
+}
+
+export interface XsdRecord {
+  name: string;
+  fields: XsdRecordField[];
+}
+
+export interface XsdAnalysis {
+  targetNamespace: string;
+  records: XsdRecord[];
+  complexTypeCount: number;
+  simpleTypeCount: number;
+}
+
+export interface MetadataColumn {
+  name: string;
+  fabricType: string;
+  included: boolean;
+  nullable: boolean;
+}
+
+export interface MetadataRequest {
+  fileFormat: string;
+  keyColumns: string[];
+  columns: MetadataColumn[];
+  /** values by FormatOption.key */
+  options: Record<string, string>;
+}
+
+export interface MetadataPreview {
+  fileName: string;
+  json: string;
+  isValid: boolean;
+  errors: string[];
+}
+
+export interface PublishMetadataPayload {
+  /** folder the {schema}.schema folder is created in ("" = Landing Zone root) */
+  parentPath: string;
+  schemaName: string;
+  tableName: string;
+  overwrite: boolean;
+  metadata: MetadataRequest;
+}
+
+export interface PublishMetadataResult {
+  filePath: string;
+  overwritten: boolean;
+}

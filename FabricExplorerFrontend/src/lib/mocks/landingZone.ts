@@ -1,4 +1,5 @@
 import { ApiError, type RequestOptions } from '../api/client';
+import { MOCK_CAPABILITIES, analyzeXsd, buildMetadata, getMetadataCapabilities, previewMetadata } from './metadata';
 import type {
   ConfigureLandingZonePayload,
   LandingZoneBatch,
@@ -11,6 +12,8 @@ import type {
   LandingZoneList,
   LandingZoneOperation,
   LandingZonePreview,
+  PublishMetadataPayload,
+  PublishMetadataResult,
 } from '@/types/landingZone';
 
 /** In-memory Landing Zone used when NEXT_PUBLIC_USE_MOCK=true. */
@@ -219,6 +222,37 @@ export const landingZoneMocks = {
   },
 
   operations: (): LandingZoneOperation[] => operations,
+
+  getMetadataCapabilities,
+  analyzeXsd,
+  previewMetadata,
+
+  publishMetadata: (req: RequestOptions): PublishMetadataResult => {
+    const payload = body<PublishMetadataPayload>(req);
+    const preview = buildMetadata(payload.metadata);
+    if (!preview.isValid) throw new ApiError(preview.errors.join(' '), { status: 400, code: 'metadata_generate.invalid_metadata' });
+
+    const parent = payload.parentPath.replace(/^\/+|\/+$/g, '');
+    if (!exists(parent)) throw notFound(parent);
+
+    const { metadataFileName, schemaFolderSuffix } = MOCK_CAPABILITIES;
+    const schemaName = payload.schemaName.trim().replace(new RegExp(`${schemaFolderSuffix.replace('.', '\\.')}$`, 'i'), '');
+    const schemaFolder = join(parent, `${schemaName}${schemaFolderSuffix}`);
+    const tableFolder = join(schemaFolder, payload.tableName.trim());
+    const filePath = join(tableFolder, metadataFileName);
+
+    const existing = exists(filePath);
+    if (existing && !payload.overwrite) {
+      log('Generate Metadata', metadataFileName, tableFolder, false, `${metadataFileName} already exists`);
+      throw new ApiError(`${metadataFileName} already exists in '/${tableFolder}'.`, { status: 409, code: 'metadata_generate.metadata_already_exists' });
+    }
+
+    [schemaFolder, tableFolder].filter((p) => !exists(p)).forEach((p) => nodes.push(folder(p, 0)));
+    nodes = nodes.filter((n) => n.path !== filePath);
+    nodes.push(file(filePath, preview.json, 0, preview.json.length));
+    log('Generate Metadata', metadataFileName, tableFolder, true, `${payload.metadata.fileFormat} metadata ${existing ? 'replaced' : 'created'}`);
+    return { filePath, overwritten: existing };
+  },
 
   /** Used by the mock upload (no HTTP involved). */
   upload: (path: string, files: File[], overwrite: boolean): LandingZoneBatch => {
