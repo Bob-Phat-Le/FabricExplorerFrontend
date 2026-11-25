@@ -77,6 +77,11 @@ export interface LandingZoneItemResult {
   error: string | null;
 }
 
+export interface LandingZoneExistingFiles {
+  /** Requested names that already exist in the destination folder. */
+  existing: string[];
+}
+
 export interface LandingZoneBatch {
   results: LandingZoneItemResult[];
   succeeded: number;

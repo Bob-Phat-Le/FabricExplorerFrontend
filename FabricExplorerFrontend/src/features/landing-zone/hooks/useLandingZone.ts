@@ -199,11 +199,18 @@ export function useLandingZone() {
     }
   }, [connectionId, latest, invalidate, resetBrowse, loadFolder, loadChildren, loadOperations, showApiError]);
 
+  // The hook lives in LandingZoneProvider, so its state survives page navigation. Nothing is fetched until the
+  // Landing Zone page is opened for the first time (activate), and after that only when the connection changes.
+  const [active, setActive] = useState(false);
+  const loadedFor = useRef<string | undefined | null>(null);
+  const activate = useCallback(() => setActive(true), []);
+
   useEffect(() => {
+    if (!active || loadedFor.current === connectionId) return;
+    loadedFor.current = connectionId;
     void loadConfig();
-    // reload only when the connection changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [connectionId]);
+  }, [active, connectionId]);
 
   // recursive search (debounced)
   useEffect(() => {
@@ -240,6 +247,10 @@ export function useLandingZone() {
   const navigate = useCallback(
     (path: string) => {
       setCurrentPath(path);
+      setListing([]);
+      setTruncated(false);
+      setListState('loading');
+      setListError(null);
       setSelected(new Set());
       setPage(1);
 
@@ -482,6 +493,15 @@ export function useLandingZone() {
     [run, currentPath, reportBatch],
   );
 
+  /** Names of the requested item type that already exist in the current folder. Throws when the check fails. */
+  const checkFilesExist = useCallback(
+    async (names: string[], isFolder: boolean, signal?: AbortSignal): Promise<string[]> => {
+      if (!connectionId || names.length === 0) return [];
+      return (await lzApi.checkFilesExist(connectionId, currentPath, names, isFolder, { signal })).existing;
+    },
+    [connectionId, currentPath],
+  );
+
   const downloadItems = useCallback(
     async (items: LandingZoneItem[]) => {
       if (!connectionId) return;
@@ -560,6 +580,7 @@ export function useLandingZone() {
   }, [connectionId, resetBrowse, showToast, showApiError]);
 
   return {
+    activate,
     hasConnection: connectionId !== undefined,
     connectionId,
 
@@ -618,6 +639,7 @@ export function useLandingZone() {
     transfer,
     deleteItems,
     upload,
+    checkFilesExist,
     downloadItems,
   };
 }

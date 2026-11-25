@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { timeAgo } from '@/lib/format';
 import { useConnection } from '@/providers/ConnectionProvider';
+import { useLandingZoneContext } from '@/providers/LandingZoneProvider';
 import type { LandingZoneItem } from '@/types/landingZone';
 import { ConfigureDialog } from './components/ConfigureDialog';
 import { DeleteDialog, NewFolderDialog, RenameDialog, TransferDialog, UploadDialog } from './components/Dialogs';
@@ -12,7 +13,6 @@ import { FileDrawer } from './components/FileDrawer';
 import { FolderTree } from './components/FolderTree';
 import { MetadataWizard } from './metadata/MetadataWizard';
 import { OperationsPanel } from './components/OperationsPanel';
-import { useLandingZone } from './hooks/useLandingZone';
 
 type Dialog =
   | { type: 'upload' }
@@ -25,9 +25,13 @@ type Dialog =
 
 export function LandingZoneView() {
   const { activeConnection } = useConnection();
-  const state = useLandingZone();
+  const state = useLandingZoneContext();
+  const { activate } = state;
   const [dialog, setDialog] = useState<Dialog | null>(null);
   const [drawerItem, setDrawerItem] = useState<LandingZoneItem | null>(null);
+
+  // first visit loads the Landing Zone; later visits reuse the state kept by LandingZoneProvider
+  useEffect(() => activate(), [activate]);
 
   const configured = state.config?.isConfigured === true;
   const closeDialog = () => setDialog(null);
@@ -80,12 +84,12 @@ export function LandingZoneView() {
               type="button"
               disabled={state.working}
               onClick={() => {
-                if (window.confirm('Remove the Landing Zone configuration of this connection? Files are not deleted.')) void state.removeConfig();
+                if (window.confirm('Clear the Landing Zone configuration of this connection? Files are not deleted.')) void state.removeConfig();
               }}
               className="px-3 py-1.5 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 text-[11px] font-semibold rounded-lg transition-colors flex items-center space-x-1.5"
             >
               <i className="fa-regular fa-trash-can" />
-              <span>Remove</span>
+              <span>Clear</span>
             </button>
           </div>
         )}
@@ -166,10 +170,10 @@ export function LandingZoneView() {
         <ConfigureDialog currentUri={state.config?.uri ?? null} working={state.working} onSubmit={state.saveConfig} onClose={closeDialog} />
       )}
       {dialog?.type === 'upload' && (
-        <UploadDialog destination={state.currentPath} working={state.working} onSubmit={state.upload} onClose={closeDialog} />
+        <UploadDialog destination={state.currentPath} working={state.working} onSubmit={state.upload} onCheckExists={state.checkFilesExist} onClose={closeDialog} />
       )}
       {dialog?.type === 'newFolder' && (
-        <NewFolderDialog parentPath={state.currentPath} working={state.working} onSubmit={state.createFolder} onClose={closeDialog} />
+        <NewFolderDialog parentPath={state.currentPath} working={state.working} onSubmit={state.createFolder} onCheckExists={state.checkFilesExist} onClose={closeDialog} />
       )}
       {dialog?.type === 'metadata' && <MetadataWizard state={state} onClose={closeDialog} onViewFile={setDrawerItem} />}
       {dialog?.type === 'rename' && (

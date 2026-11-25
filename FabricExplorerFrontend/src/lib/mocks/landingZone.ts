@@ -4,6 +4,7 @@ import type {
   ConfigureLandingZonePayload,
   LandingZoneBatch,
   LandingZoneConfig,
+  LandingZoneExistingFiles,
   LandingZoneFileDetails,
   LandingZoneFolders,
   LandingZoneItem,
@@ -255,6 +256,14 @@ export const landingZoneMocks = {
     nodes.push(file(filePath, preview.json, 0, preview.json.length));
     log('Generate Metadata', metadataFileName, tableFolder, true, `${payload.metadata.fileFormat} metadata ${existing ? 'replaced' : 'created'}`);
     return { filePath, overwritten: existing };
+  },
+
+  checkExists: (req: RequestOptions): LandingZoneExistingFiles => {
+    const { path = '', names = [], isFolder = false } = body<{ path?: string; names?: string[]; isFolder?: boolean }>(req);
+    const dir = path.replace(/^\/+|\/+$/g, '');
+    return {
+      existing: names.filter((name) => nodes.some((node) => node.path === join(dir, name) && node.isFolder === isFolder)),
+    };
   },
 
   /** Used by the mock upload (no HTTP involved). */

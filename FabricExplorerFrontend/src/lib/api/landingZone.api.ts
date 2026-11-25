@@ -5,6 +5,7 @@ import type {
   ConfigureLandingZonePayload,
   LandingZoneBatch,
   LandingZoneConfig,
+  LandingZoneExistingFiles,
   LandingZoneFileDetails,
   LandingZoneFolders,
   LandingZoneItem,
@@ -127,6 +128,13 @@ async function rawRequest(path: string, init: RequestInit & { query?: Record<str
   }
   return res;
 }
+
+/** Which of the given file or folder names already exist in `path`. */
+export const checkFilesExist = (connectionId: string, path: string, names: string[], isFolder: boolean, { signal }: Opts = {}) =>
+  call<unknown>(
+    { method: 'POST', path: `${BASE}/files/exists`, headers: headers(connectionId), body: { path, names, isFolder }, signal },
+    mocks.landingZone.checkExists,
+  ).then((r) => unwrap<LandingZoneExistingFiles>(r));
 
 export async function uploadFiles(connectionId: string, path: string, files: File[], overwrite: boolean): Promise<LandingZoneBatch> {
   if (API_CONFIG.useMock) return structuredClone(mocks.landingZone.upload(path, files, overwrite));

@@ -187,10 +187,12 @@ export function FileBrowser({ state, onOpenFile, onUpload, onNewFolder, onGenera
 
       {/* content */}
       <div className="flex-1 overflow-y-auto relative min-h-0">
-        {(state.listState === 'loading' || state.searching) && items.length === 0 && (
-          <div className="p-12 text-center text-xs text-slate-400">
-            <i className="fa-solid fa-spinner fa-spin mr-2" />
-            {state.searching ? 'Searching…' : 'Loading…'}
+        {(state.listState === 'loading' || state.searching) && (
+          <div className="absolute inset-0 z-[5] flex items-center justify-center bg-white/80 text-xs text-slate-500">
+            <div className="flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-sm">
+              <i className="fa-solid fa-spinner fa-spin mr-2 text-indigo-600" />
+              {state.searching ? 'Searching…' : 'Loading folder…'}
+            </div>
           </div>
         )}
 

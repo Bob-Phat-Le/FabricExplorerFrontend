@@ -107,6 +107,7 @@ export function ConfigureDialog({ currentUri, working, onSubmit, onClose }: Prop
       <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100">
         <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold">Cancel</button>
         <button type="button" disabled={!valid || working} onClick={() => void submit()} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold">
+          {working && <i className="fa-solid fa-spinner fa-spin mr-1.5" />}
           {working ? 'Checking access…' : 'Save'}
         </button>
       </div>
