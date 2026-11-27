@@ -140,9 +140,6 @@ export const configurationMocks = {
         tokenEndpoint: c.tokenEndpoint ?? `https://login.microsoftonline.com/${c.tenantId}/oauth2/v2.0/token`,
         clientId: c.clientId,
         credentials: { clientSecret: 'excluded' },
-        landingZone: body.include.landingZone
-          ? { uri: 'abfss://landing@onelake.dfs.fabric.microsoft.com/Mock.MountedRelationalDatabase/Files/LandingZone' }
-          : null,
         createdAt: iso(40),
         updatedAt: iso(6),
       }));

@@ -37,7 +37,6 @@ export function useImportWizard(caps: ConfigurationCapabilities, onImported: () 
   const [selected, setSelectedState] = useState<ReadonlySet<string>>(() => new Set());
   const [mappings, setMappings] = useState<Readonly<Record<string, string>>>({});
   const [mode, setModeState] = useState<ImportMode>('merge');
-  const [restoreLandingZone, setRestoreLandingZone] = useState(true);
   const [atomic, setAtomic] = useState(false);
   const [ignoreIntegrity, setIgnoreIntegrity] = useState(false);
 
@@ -158,16 +157,6 @@ export function useImportWizard(caps: ConfigurationCapabilities, onImported: () 
     [plan],
   );
 
-  const hasLandingZone = useMemo(
-    () =>
-      selectedEntries.some(
-        (e) =>
-          e.type === 'Connection' &&
-          !!document?.connections?.find((c) => lower(c.key) === lower(e.key))?.landingZone?.uri,
-      ),
-    [selectedEntries, document],
-  );
-
   // ---------- actions ----------
 
   const reset = useCallback(() => {
@@ -181,7 +170,6 @@ export function useImportWizard(caps: ConfigurationCapabilities, onImported: () 
     setSelectedState(new Set());
     setMappings({});
     setModeState('merge');
-    setRestoreLandingZone(true);
     setAtomic(false);
     setIgnoreIntegrity(false);
     setImporting(false);
@@ -214,7 +202,6 @@ export function useImportWizard(caps: ConfigurationCapabilities, onImported: () 
         setDocument(doc);
         setPreview(res);
         setSelectedState(new Set(res.entries.filter((e) => e.key && e.validation.valid).map((e) => entryKey(e.type, e.key))));
-        setRestoreLandingZone(true);
         setStep(2);
       } catch (e) {
         if (run !== checkRun.current) return;
@@ -299,10 +286,9 @@ export function useImportWizard(caps: ConfigurationCapabilities, onImported: () 
   );
 
   const setOption = useCallback(
-    (name: 'restoreLandingZone' | 'atomic' | 'ignoreIntegrity', value: boolean) => {
+    (name: 'atomic' | 'ignoreIntegrity', value: boolean) => {
       invalidateAttempt();
-      if (name === 'restoreLandingZone') setRestoreLandingZone(value);
-      else if (name === 'atomic') setAtomic(value);
+      if (name === 'atomic') setAtomic(value);
       else setIgnoreIntegrity(value);
     },
     [invalidateAttempt],
@@ -335,7 +321,6 @@ export function useImportWizard(caps: ConfigurationCapabilities, onImported: () 
           selection: selectedEntries.map((e) => ({ type: e.type, key: e.key as string })),
           options: {
             referenceMappings: Object.keys(referenceMappings).length ? referenceMappings : undefined,
-            restoreLandingZone: hasLandingZone && restoreLandingZone,
             atomic,
             ignoreIntegrityMismatch: ignoreIntegrity,
           },
@@ -350,7 +335,7 @@ export function useImportWizard(caps: ConfigurationCapabilities, onImported: () 
     } finally {
       setImporting(false);
     }
-  }, [document, selectedEntries, mappings, mode, hasLandingZone, restoreLandingZone, atomic, ignoreIntegrity, connectionKeyOf, onImported]);
+  }, [document, selectedEntries, mappings, mode, atomic, ignoreIntegrity, connectionKeyOf, onImported]);
 
   return {
     step,
@@ -378,11 +363,9 @@ export function useImportWizard(caps: ConfigurationCapabilities, onImported: () 
     unresolvedCount: unresolvedQueries.length,
     mode,
     setMode,
-    restoreLandingZone,
     atomic,
     ignoreIntegrity,
     setOption,
-    hasLandingZone,
     plan,
     planCounts,
     needCredentials,

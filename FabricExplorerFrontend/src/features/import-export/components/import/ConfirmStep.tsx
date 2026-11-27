@@ -33,12 +33,6 @@ export function ConfirmStep({ w }: { w: ImportWizardState }) {
           <span className="font-bold text-slate-800">Transaction:</span>{' '}
           <span className="text-slate-600">{w.atomic ? 'All or nothing' : 'Entry by entry'}</span>
         </p>
-        {w.hasLandingZone && (
-          <p>
-            <span className="font-bold text-slate-800">Landing Zone:</span>{' '}
-            <span className="text-slate-600">{w.restoreLandingZone ? 'Restored' : 'Not restored'}</span>
-          </p>
-        )}
       </div>
 
       {updated.length > 0 && (

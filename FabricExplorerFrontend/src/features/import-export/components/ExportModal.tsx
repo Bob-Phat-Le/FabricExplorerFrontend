@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Modal, ModalCloseButton } from '@/components/ui/Modal';
 import { RadioCard } from '@/components/ui/RadioCard';
-import { Toggle } from '@/components/ui/Toggle';
-import { SettingRow } from '@/components/ui/WizardFooter';
 import * as configurationApi from '@/lib/api/configuration.api';
 import { useToast } from '@/providers/ToastProvider';
 import type { ExportItemRef, ExportScope } from '@/types/configuration';
@@ -20,7 +18,6 @@ export function ExportModal({ initialScope, selected, totalItems, onClose }: Exp
   const selectedCount = selected.size;
 
   const [scope, setScope] = useState<ExportScope>(initialScope === 'selected' && selectedCount > 0 ? 'selected' : 'all');
-  const [landingZone, setLandingZone] = useState(false);
   const [busy, setBusy] = useState(false);
   const abort = useRef<AbortController | null>(null);
 
@@ -34,7 +31,6 @@ export function ExportModal({ initialScope, selected, totalItems, onClose }: Exp
         {
           scope,
           items: scope === 'selected' ? [...selected.values()] : undefined,
-          include: { landingZone },
         },
         { signal: abort.current.signal },
       );
@@ -94,10 +90,6 @@ export function ExportModal({ initialScope, selected, totalItems, onClose }: Exp
             Connections referenced by the selected saved queries are added automatically so the file can be imported on its own.
           </p>
         )}
-
-        <SettingRow title="Include Landing Zone configuration" description="Adds the Landing Zone URI of each exported connection (when it has one).">
-          <Toggle checked={landingZone} onChange={setLandingZone} />
-        </SettingRow>
 
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-amber-800 space-y-1.5">
           <div className="flex items-center space-x-2 font-bold text-amber-900">

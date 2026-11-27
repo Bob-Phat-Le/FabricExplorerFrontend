@@ -54,12 +54,6 @@ export function ModeStep({ w }: { w: ImportWizardState }) {
       <div className="space-y-2">
         <h4 className="font-bold text-slate-900 uppercase tracking-wider pt-1">Options</h4>
 
-        {w.hasLandingZone && (
-          <SettingRow title="Restore Landing Zone configuration" description="Applies the Landing Zone URI found in the file to the imported connections.">
-            <Toggle checked={w.restoreLandingZone} onChange={(v) => w.setOption('restoreLandingZone', v)} />
-          </SettingRow>
-        )}
-
         <SettingRow title="All or nothing" description="If a single entry fails, nothing is imported. Off: each entry is imported on its own.">
           <Toggle checked={w.atomic} onChange={(v) => w.setOption('atomic', v)} />
         </SettingRow>

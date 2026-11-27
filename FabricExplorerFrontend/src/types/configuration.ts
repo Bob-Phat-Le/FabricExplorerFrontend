@@ -61,7 +61,6 @@ export interface ExportItemRef {
 export interface ExportRequest {
   scope: ExportScope;
   items?: ExportItemRef[];
-  include: { landingZone: boolean };
 }
 
 export interface ExportResult {
@@ -80,7 +79,6 @@ export interface ConfigurationFileDocument {
   connections?: Array<{
     key?: string;
     name?: string;
-    landingZone?: { uri?: string | null } | null;
     [k: string]: unknown;
   }>;
   savedQueries?: FileSavedQuery[];
@@ -142,7 +140,6 @@ export interface ImportEntryRef {
 export interface ImportOptions {
   /** File connection key -> id of an existing connection. */
   referenceMappings?: Record<string, string>;
-  restoreLandingZone: boolean;
   atomic: boolean;
   ignoreIntegrityMismatch: boolean;
 }
