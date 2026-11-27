@@ -6,7 +6,9 @@ import type { IngestionResult } from '@/types/ingestion';
 import type { ReplicationResult } from '@/types/replication';
 import type { LakehouseTable } from '@/types/discovery';
 import type { CatalogTableDetail, CatalogTree } from '@/types/catalog';
+import { configurationMocks } from './configuration';
 import { landingZoneMocks } from './landingZone';
+import { savedQueryMocks } from './savedQueryMocks';
 import * as seeds from './seeds';
 
 const ok = () => ({ ok: true });
@@ -143,6 +145,8 @@ export const mocks = {
     },
   },
   landingZone: landingZoneMocks,
+  configuration: configurationMocks,
+  savedQueries: savedQueryMocks,
   stream: {
     play: async (streamId: string, dispatch: StreamDispatch, signal?: AbortSignal) => {
       const events = mockStreams.get(streamId) ?? [];
